@@ -6,7 +6,7 @@ Table of Contents
 
 * [Overview](#overview)
 * [GitHub Release Notes](#github-release-notes)
-* [Contents of the Archive](#contents-of-the-archive)
+* [Contents of the Repository](#contents-of-the-repository)
 * [Feature Overview](#feature-overview)
 * [Integration Guide](#integration-guide)
 * [Version History](#version-history)
@@ -32,13 +32,12 @@ This repository uses DXUT as a git submodule. In order to correctly build the pr
 
 `git submodule update --init`
 
-Contents of the Archive
------------------------
+Contents of the Repository
+--------------------------
 
 -   `doc/` Documentation images and slides from talks about FaceWorks.
 -   `include/` C/C++ and HLSL header files to include into your project.
 -   `samples/` source for sample apps demonstrating how to use FaceWorks.
-    -   `samples/bin/` precompiled binaries for sample apps, organized by platform.
     -   `samples/build/` Project/solution files for VS 2012, 2013 and 2015, with 32-bit and 64-bit builds in each.
     -   `samples/externals/` third-party code used by the sample apps.
     -   `samples/d3d11/` interactive D3D11 sample.
@@ -145,7 +144,7 @@ NB: it doesn't matter what units are used for vertex positions, as long as the s
 
 FaceWorks also depends on two lookup textures, one related to curvature and one to shadows. These textures are not specific to a mesh; you can most likely generate them once and import them into your engine as regular RGB textures, to be re-used across all meshes rendered with FaceWorks.
 
-In the `samples/lut_generator` directory in the FaceWorks archive, there is a utility for generating these LUTs and saving them out as .bmp files. You can also generate the LUTs programmatically using the `GFSDK_FaceWorks_GenerateCurvatureLUT()` and `GFSDK_FaceWorks_GenerateShadowLUT()` functions. Each of these functions accepts a configuration struct detailing the parameters to the generation process.
+In the `samples/lut_generator` directory in the FaceWorks repository, there is a utility for generating these LUTs and saving them out as .bmp files. You can also generate the LUTs programmatically using the `GFSDK_FaceWorks_GenerateCurvatureLUT()` and `GFSDK_FaceWorks_GenerateShadowLUT()` functions. Each of these functions accepts a configuration struct detailing the parameters to the generation process.
 
 The members of `GFSDK_FaceWorks_CurvatureLUTConfig` are as follows:
 
