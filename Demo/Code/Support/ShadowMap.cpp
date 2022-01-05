@@ -28,23 +28,20 @@
  * policies, either expressed or implied, of the copyright holders.
  */
 
-
 #include "DXUT.h"
 #include "ShadowMap.h"
-
 
 ID3D10Effect *ShadowMap::effect;
 ID3D10InputLayout *ShadowMap::vertexLayout;
 
-
-void ShadowMap::init(ID3D10Device *device) {
+void ShadowMap::init(ID3D10Device *device)
+{
     HRESULT hr;
     if (effect == NULL)
         V(D3DX10CreateEffectFromResource(GetModuleHandle(NULL), L"ShadowMap.fx", NULL, NULL, NULL, "fx_4_0", D3D10_SHADER_ENABLE_STRICTNESS, 0, device, NULL, NULL, &effect, NULL, NULL));
 
     const D3D10_INPUT_ELEMENT_DESC layout[] = {
-        { "POSITION",  0, DXGI_FORMAT_R32G32B32_FLOAT, 0, D3D10_APPEND_ALIGNED_ELEMENT, D3D10_INPUT_PER_VERTEX_DATA, 0 }
-    };
+        {"POSITION", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, D3D10_APPEND_ALIGNED_ELEMENT, D3D10_INPUT_PER_VERTEX_DATA, 0}};
     UINT numElements = sizeof(layout) / sizeof(D3D10_INPUT_ELEMENT_DESC);
 
     D3D10_PASS_DESC desc;
@@ -52,25 +49,25 @@ void ShadowMap::init(ID3D10Device *device) {
     V(device->CreateInputLayout(layout, numElements, desc.pIAInputSignature, desc.IAInputSignatureSize, &vertexLayout));
 }
 
-
-void ShadowMap::release() {
+void ShadowMap::release()
+{
     SAFE_RELEASE(effect);
     SAFE_RELEASE(vertexLayout);
 }
 
-
-ShadowMap::ShadowMap(ID3D10Device *device, int width, int height) 
-        : device(device) {
+ShadowMap::ShadowMap(ID3D10Device *device, int width, int height)
+    : device(device)
+{
     depthStencil = new DepthStencil(device, width, height);
 }
 
-
-ShadowMap::~ShadowMap() {
+ShadowMap::~ShadowMap()
+{
     SAFE_DELETE(depthStencil);
 }
 
-
-void ShadowMap::begin(const D3DXMATRIX &view, const D3DXMATRIX &projection) {
+void ShadowMap::begin(const D3DXMATRIX &view, const D3DXMATRIX &projection)
+{
     HRESULT hr;
 
     device->IASetInputLayout(vertexLayout);
@@ -88,9 +85,9 @@ void ShadowMap::begin(const D3DXMATRIX &view, const D3DXMATRIX &projection) {
     linearProjection._33 /= F;
     linearProjection._43 /= F;
 
-    V(effect->GetVariableByName("view")->AsMatrix()->SetMatrix((float*) &view));
-    V(effect->GetVariableByName("projection")->AsMatrix()->SetMatrix((float*) &linearProjection));
-    
+    V(effect->GetVariableByName("view")->AsMatrix()->SetMatrix((float *)&view));
+    V(effect->GetVariableByName("projection")->AsMatrix()->SetMatrix((float *)&linearProjection));
+
     device->OMSetRenderTargets(0, NULL, *depthStencil);
 
     UINT numViewports = 1;
@@ -98,25 +95,25 @@ void ShadowMap::begin(const D3DXMATRIX &view, const D3DXMATRIX &projection) {
     depthStencil->setViewport();
 }
 
-
-void ShadowMap::setWorldMatrix(const D3DXMATRIX &world) {
+void ShadowMap::setWorldMatrix(const D3DXMATRIX &world)
+{
     HRESULT hr;
-    V(effect->GetVariableByName("world")->AsMatrix()->SetMatrix((float*) &world));
+    V(effect->GetVariableByName("world")->AsMatrix()->SetMatrix((float *)&world));
 }
 
-
-void ShadowMap::end() {
+void ShadowMap::end()
+{
     device->RSSetViewports(1, &viewport);
     device->OMSetRenderTargets(0, NULL, NULL);
 }
 
-
-D3DXMATRIX ShadowMap::getViewProjectionTextureMatrix(const D3DXMATRIX &view, const D3DXMATRIX &projection) {
+D3DXMATRIX ShadowMap::getViewProjectionTextureMatrix(const D3DXMATRIX &view, const D3DXMATRIX &projection)
+{
     D3DXMATRIX scale;
     D3DXMatrixScaling(&scale, 0.5f, -0.5f, 1.0f);
 
     D3DXMATRIX translation;
     D3DXMatrixTranslation(&translation, 0.5f, 0.5f, 0.0f);
-    
+
     return view * projection * scale * translation;
 }

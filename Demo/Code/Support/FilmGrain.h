@@ -28,7 +28,6 @@
  * policies, either expressed or implied, of the copyright holders.
  */
 
-
 #ifndef FILMGRAIN_H
 #define FILMGRAIN_H
 
@@ -38,29 +37,30 @@
 #include <d3dx10.h>
 #include <dxerr.h>
 
-class FilmGrain {
-    public:
-        FilmGrain(ID3D10Device *device, int width, int height, float noiseIntensity=1.0f, float exposure=1.0f);
-        ~FilmGrain();
+class FilmGrain
+{
+public:
+    FilmGrain(ID3D10Device *device, int width, int height, float noiseIntensity = 1.0f, float exposure = 1.0f);
+    ~FilmGrain();
 
-        void setNoiseIntensity(float noiseIntensity) { this->noiseIntensity = noiseIntensity; }
-        float getNoiseIntensity() const { return noiseIntensity; }
+    void setNoiseIntensity(float noiseIntensity) { this->noiseIntensity = noiseIntensity; }
+    float getNoiseIntensity() const { return noiseIntensity; }
 
-        void setExposure(float exposure) { this->exposure = exposure; }
-        float getExposure() const { return exposure; }
+    void setExposure(float exposure) { this->exposure = exposure; }
+    float getExposure() const { return exposure; }
 
-        void go(ID3D10ShaderResourceView *src, ID3D10RenderTargetView *dst, float t);
+    void go(ID3D10ShaderResourceView *src, ID3D10RenderTargetView *dst, float t);
 
-    private:        
-        ID3D10Device *device;
-        int width, height;
+private:
+    ID3D10Device *device;
+    int width, height;
 
-        float noiseIntensity;
-        float exposure;
+    float noiseIntensity;
+    float exposure;
 
-        ID3D10Effect *effect;
-        Quad *quad;
-        ID3D10ShaderResourceView *noiseSRV;
+    ID3D10Effect *effect;
+    Quad *quad;
+    ID3D10ShaderResourceView *noiseSRV;
 };
 
 #endif

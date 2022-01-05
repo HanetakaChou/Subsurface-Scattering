@@ -23,61 +23,61 @@
  * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
  * POSSIBILITY OF SUCH DAMAGE.
  *
- * The views and conclusions contained in the software and documentation are 
+ * The views and conclusions contained in the software and documentation are
  * those of the authors and should not be interpreted as representing official
  * policies, either expressed or implied, of the copyright holders.
  */
 
 
 cbuffer UpdatedPerFrame {
-    matrix view;
-    matrix projection;
-    matrix world;
-    float intensity;
+	matrix view;
+	matrix projection;
+	matrix world;
+	float intensity;
 }
 
 TextureCube skyTex;
 
 
 SamplerState LinearSampler {
-    Filter = MIN_MAG_MIP_LINEAR;
-    AddressU = Clamp;
-    AddressV = Clamp;
+	Filter = MIN_MAG_MIP_LINEAR;
+	AddressU = Clamp;
+	AddressV = Clamp;
 };
 
 
 void SkyDomeVS(float4 position : POSITION,
-               out float4 svposition : SV_POSITION,
-               out float3 texcoord : TEXCOORD0,
-               uniform float4x4 worldViewProjection) {
-    svposition = mul(position, worldViewProjection);
-    texcoord = position.xyz;
+	out float4 svposition : SV_POSITION,
+	out float3 texcoord : TEXCOORD0,
+	uniform float4x4 worldViewProjection) {
+	svposition = mul(position, worldViewProjection);
+	texcoord = position.xyz;
 }
 
 float4 SkyDomePS(float4 position : SV_POSITION,
-                 float3 texcoord : TEXCOORD0) : SV_TARGET0 {
-    return float4(intensity * skyTex.Sample(LinearSampler, texcoord).rgb, 0.0);
+	float3 texcoord : TEXCOORD0) : SV_TARGET0{
+return float4(intensity * skyTex.Sample(LinearSampler, texcoord).rgb, 0.0);
 }
 
 
 DepthStencilState EnableDepthDisableStencil {
-    DepthEnable = TRUE;
-    StencilEnable = FALSE;
+	DepthEnable = TRUE;
+	StencilEnable = FALSE;
 };
 
 BlendState NoBlending {
-    AlphaToCoverageEnable = FALSE;
-    BlendEnable[0] = FALSE;
+	AlphaToCoverageEnable = FALSE;
+	BlendEnable[0] = FALSE;
 };
 
 
 technique10 RenderSkyDome {
-    pass RenderSkyDome {
-        SetVertexShader(CompileShader(vs_4_0, SkyDomeVS(mul(mul(world, view), projection))));
-        SetGeometryShader(NULL);
-        SetPixelShader(CompileShader(ps_4_0, SkyDomePS()));
-        
-        SetDepthStencilState(EnableDepthDisableStencil, 0);
-        SetBlendState(NoBlending, float4( 0.0f, 0.0f, 0.0f, 0.0f ), 0xFFFFFFFF);
-    }
+	pass RenderSkyDome {
+		SetVertexShader(CompileShader(vs_4_0, SkyDomeVS(mul(mul(world, view), projection))));
+		SetGeometryShader(NULL);
+		SetPixelShader(CompileShader(ps_4_0, SkyDomePS()));
+
+		SetDepthStencilState(EnableDepthDisableStencil, 0);
+		SetBlendState(NoBlending, float4(0.0f, 0.0f, 0.0f, 0.0f), 0xFFFFFFFF);
+	}
 }

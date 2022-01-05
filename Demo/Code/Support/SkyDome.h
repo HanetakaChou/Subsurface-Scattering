@@ -28,7 +28,6 @@
  * policies, either expressed or implied, of the copyright holders.
  */
 
-
 #ifndef SKYDOME_H
 #define SKYDOME_H
 
@@ -37,33 +36,34 @@
 #include "SDKmesh.h"
 #include "RenderTarget.h"
 
-class SkyDome {
-    public:
-        SkyDome(ID3D10Device *device, const std::wstring &dir, float intensity=1.0f);
-        ~SkyDome();
-        
-        void render(const D3DXMATRIX &view, const D3DXMATRIX &projection, float scale);
-        void setDirectory(const std::wstring &dir);
-    
-        void setIntensity(float intensity) { this->intensity = intensity; }
-        float getIntensity() const { return intensity; }
+class SkyDome
+{
+public:
+    SkyDome(ID3D10Device *device, const std::wstring &dir, float intensity = 1.0f);
+    ~SkyDome();
 
-        void setAngle(const D3DXVECTOR2 &angle) { this->angle = angle; }
-        D3DXVECTOR2 getAngle() const { return angle; }
+    void render(const D3DXMATRIX &view, const D3DXMATRIX &projection, float scale);
+    void setDirectory(const std::wstring &dir);
 
-    private:
-        void createMesh(const std::wstring &dir);
-        static void CALLBACK createTextureFromFile(ID3D10Device* device, 
-                                                   char *filename, 
-                                                   ID3D10ShaderResourceView **shaderResourceView,
-                                                   void *context, 
-                                                   bool srgb);
+    void setIntensity(float intensity) { this->intensity = intensity; }
+    float getIntensity() const { return intensity; }
 
-        ID3D10Device *device;
-        ID3D10Effect *effect;
-        CDXUTSDKMesh mesh;
-        float intensity;
-        D3DXVECTOR2 angle;
+    void setAngle(const D3DXVECTOR2 &angle) { this->angle = angle; }
+    D3DXVECTOR2 getAngle() const { return angle; }
+
+private:
+    void createMesh(const std::wstring &dir);
+    static void CALLBACK createTextureFromFile(ID3D10Device *device,
+                                               char *filename,
+                                               ID3D10ShaderResourceView **shaderResourceView,
+                                               void *context,
+                                               bool srgb);
+
+    ID3D10Device *device;
+    ID3D10Effect *effect;
+    CDXUTSDKMesh mesh;
+    float intensity;
+    D3DXVECTOR2 angle;
 };
 
 #endif

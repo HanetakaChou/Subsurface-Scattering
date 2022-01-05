@@ -23,7 +23,7 @@
  * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
  * POSSIBILITY OF SUCH DAMAGE.
  *
- * The views and conclusions contained in the software and documentation are 
+ * The views and conclusions contained in the software and documentation are
  * those of the authors and should not be interpreted as representing official
  * policies, either expressed or implied, of the copyright holders.
  */
@@ -35,34 +35,34 @@ uniform float4x4 projection;
 
 
 float4 ShadowMapVS(float4 position : POSITION0,
-                   uniform float4x4 worldViewProjection) : SV_POSITION {
-    float4 pos = mul(position, worldViewProjection);
-    pos.z *= pos.w; // We want linear positions
-    return pos;
+	uniform float4x4 worldViewProjection) : SV_POSITION{
+float4 pos = mul(position, worldViewProjection);
+pos.z *= pos.w; // We want linear positions
+return pos;
 }
 
 
 DepthStencilState EnableDepthDisableStencil {
-    DepthEnable = TRUE;
-    DepthWriteMask = ALL;
-    DepthFunc = LESS_EQUAL;
-    StencilEnable = FALSE;
+	DepthEnable = TRUE;
+	DepthWriteMask = ALL;
+	DepthFunc = LESS_EQUAL;
+	StencilEnable = FALSE;
 };
 
 
 BlendState NoBlending {
-    AlphaToCoverageEnable = FALSE;
-    BlendEnable[0] = FALSE;
+	AlphaToCoverageEnable = FALSE;
+	BlendEnable[0] = FALSE;
 };
 
 
 technique10 ShadowMap {
-    pass ShadowMap {
-        SetVertexShader(CompileShader(vs_4_0, ShadowMapVS(mul(mul(world, view), projection))));
-        SetGeometryShader(NULL);
-        SetPixelShader(NULL);
-        
-        SetDepthStencilState(EnableDepthDisableStencil, 0);
-        SetBlendState(NoBlending, float4(0.0f, 0.0f, 0.0f, 0.0f), 0xFFFFFFFF);
-    }
+	pass ShadowMap {
+		SetVertexShader(CompileShader(vs_4_0, ShadowMapVS(mul(mul(world, view), projection))));
+		SetGeometryShader(NULL);
+		SetPixelShader(NULL);
+
+		SetDepthStencilState(EnableDepthDisableStencil, 0);
+		SetBlendState(NoBlending, float4(0.0f, 0.0f, 0.0f, 0.0f), 0xFFFFFFFF);
+	}
 }

@@ -28,7 +28,6 @@
  * policies, either expressed or implied, of the copyright holders.
  */
 
-
 #ifndef TIMER_H
 #define TIMER_H
 
@@ -37,7 +36,6 @@
 #include <map>
 #include <vector>
 
-
 #ifdef TIMER_DIRECTX_9
 #include <d3d9.h>
 #else
@@ -45,66 +43,67 @@
 #endif
 #include <dxerr.h>
 
+class Timer
+{
+public:
+#ifdef TIMER_DIRECTX_9
+    Timer(IDirect3DDevice9 *device);
+#else
+    Timer(ID3D10Device *device);
+#endif
+    ~Timer();
 
-class Timer {
+    void reset() { sections.clear(); }
+    void start();
+    float clock(const std::wstring &msg = L"");
+    float accumulated() const { return accum; }
+
+    void sleep(float ms);
+
+    void setEnabled(bool enabled) { this->enabled = enabled; }
+    bool isEnabled() const { return enabled; }
+
+    void setFlushEnabled(bool flushEnabled) { this->flushEnabled = flushEnabled; }
+    bool isFlushEnabled() const { return flushEnabled; }
+
+    void setWindowSize(int windowSize) { this->windowSize = windowSize; }
+    int getWindowSize() const { return windowSize; }
+
+    void setRepetitionsCount(int repetitionCount) { this->repetitionCount = repetitionCount; }
+    int getRepetitionsCount() const { return repetitionCount; }
+
+    float getSection(const std::wstring &name) { return 1000.0f * sections[name].mean / repetitionCount; }
+
+    friend std::wostream &operator<<(std::wostream &out, const Timer &timer);
+
+private:
+    float mean(const std::wstring &msg, float t);
+    void flush();
+
+#ifdef TIMER_DIRECTX_9
+    IDirect3DQuery9 *event;
+#else
+    ID3D10Query *event;
+#endif
+
+    __int64 t0;
+    float accum;
+
+    bool enabled;
+    bool flushEnabled;
+    int windowSize;
+    int repetitionCount;
+
+    class Section
+    {
     public:
-        #ifdef TIMER_DIRECTX_9
-        Timer(IDirect3DDevice9 *device);
-        #else
-        Timer(ID3D10Device *device);
-        #endif
-        ~Timer();
-
-        void reset() { sections.clear(); }
-        void start();
-        float clock(const std::wstring &msg=L"");
-        float accumulated() const { return accum; }
-
-        void sleep(float ms);
-
-        void setEnabled(bool enabled) { this->enabled = enabled; }
-        bool isEnabled() const { return enabled; }
-
-        void setFlushEnabled(bool flushEnabled) { this->flushEnabled = flushEnabled; }
-        bool isFlushEnabled() const { return flushEnabled; }
-
-        void setWindowSize(int windowSize) { this->windowSize = windowSize; }
-        int getWindowSize() const { return windowSize; }
-
-        void setRepetitionsCount(int repetitionCount) { this->repetitionCount = repetitionCount; }
-        int getRepetitionsCount() const { return repetitionCount; }
-
-        float getSection(const std::wstring &name) { return 1000.0f * sections[name].mean / repetitionCount; }
-
-        friend std::wostream &operator<<(std::wostream &out, const Timer &timer);
-
-    private:
-        float mean(const std::wstring &msg, float t);
-        void flush();
-
-        #ifdef TIMER_DIRECTX_9
-        IDirect3DQuery9 *event;
-        #else
-        ID3D10Query *event;
-        #endif
-
-        __int64 t0;
-        float accum;
-
-        bool enabled;
-        bool flushEnabled;
-        int windowSize;
-        int repetitionCount;
-
-        class Section {
-            public:
-                Section() : mean(0.0), pos(0), completed(0.0f) {}
-                std::vector<std::pair<float, bool> > buffer;
-                float mean;
-                int pos;
-                float completed;
-        };
-        std::map<std::wstring, Section> sections;
+        Section() : mean(0.0), pos(0), completed(0.0f) {}
+        std::vector<std::pair<float, bool>> buffer;
+        float mean;
+        int pos;
+        float completed;
+    };
+    std::map<std::wstring, Section> sections;
 };
 
 #endif

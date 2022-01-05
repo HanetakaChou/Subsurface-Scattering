@@ -28,124 +28,180 @@
  * policies, either expressed or implied, of the copyright holders.
  */
 
-
 #include "Camera.h"
 using namespace std;
 
-
-#pragma region Useful Macros from DXUT (copy-pasted here as we prefer this to be as self-contained as possible)
+#pragma region Useful Macros from DXUT(copy - pasted here as we prefer this to be as self - contained as possible)
 #if defined(DEBUG) || defined(_DEBUG)
 #ifndef V
-#define V(x) { hr = (x); if (FAILED(hr)) { DXTrace(__FILE__, (DWORD)__LINE__, hr, L#x, true); } }
+#define V(x)                                                   \
+    {                                                          \
+        hr = (x);                                              \
+        if (FAILED(hr))                                        \
+        {                                                      \
+            DXTrace(__FILE__, (DWORD)__LINE__, hr, L#x, true); \
+        }                                                      \
+    }
 #endif
 #ifndef V_RETURN
-#define V_RETURN(x) { hr = (x); if (FAILED(hr)) { return DXTrace(__FILE__, (DWORD)__LINE__, hr, L#x, true); } }
+#define V_RETURN(x)                                                   \
+    {                                                                 \
+        hr = (x);                                                     \
+        if (FAILED(hr))                                               \
+        {                                                             \
+            return DXTrace(__FILE__, (DWORD)__LINE__, hr, L#x, true); \
+        }                                                             \
+    }
 #endif
 #else
 #ifndef V
-#define V(x) { hr = (x); }
+#define V(x)      \
+    {             \
+        hr = (x); \
+    }
 #endif
 #ifndef V_RETURN
-#define V_RETURN(x) { hr = (x); if( FAILED(hr) ) { return hr; } }
+#define V_RETURN(x)     \
+    {                   \
+        hr = (x);       \
+        if (FAILED(hr)) \
+        {               \
+            return hr;  \
+        }               \
+    }
 #endif
 #endif
 
 #ifndef SAFE_DELETE
-#define SAFE_DELETE(p) { if (p) { delete (p); (p) = NULL; } }
+#define SAFE_DELETE(p)  \
+    {                   \
+        if (p)          \
+        {               \
+            delete (p); \
+            (p) = NULL; \
+        }               \
+    }
 #endif
 #ifndef SAFE_DELETE_ARRAY
-#define SAFE_DELETE_ARRAY(p) { if (p) { delete[] (p); (p) = NULL; } }
+#define SAFE_DELETE_ARRAY(p) \
+    {                        \
+        if (p)               \
+        {                    \
+            delete[](p);     \
+            (p) = NULL;      \
+        }                    \
+    }
 #endif
 #ifndef SAFE_RELEASE
-#define SAFE_RELEASE(p) { if (p) { (p)->Release(); (p) = NULL; } }
+#define SAFE_RELEASE(p)     \
+    {                       \
+        if (p)              \
+        {                   \
+            (p)->Release(); \
+            (p) = NULL;     \
+        }                   \
+    }
 #endif
 #pragma endregion
 
-
-LRESULT Camera::handleMessages(HWND hwnd, UINT msg, WPARAM wparam, LPARAM lparam) {
-    switch(msg) {
-        case WM_LBUTTONDOWN: {
-            POINT point;
-            GetCursorPos(&point);
-            mousePos = D3DXVECTOR2(float(point.x), float(point.y));
-            draggingLeft = true;
+LRESULT Camera::handleMessages(HWND hwnd, UINT msg, WPARAM wparam, LPARAM lparam)
+{
+    switch (msg)
+    {
+    case WM_LBUTTONDOWN:
+    {
+        POINT point;
+        GetCursorPos(&point);
+        mousePos = D3DXVECTOR2(float(point.x), float(point.y));
+        draggingLeft = true;
+        attenuation = 4.0f;
+        SetCapture(hwnd);
+        return true;
+    }
+    case WM_LBUTTONUP:
+        draggingLeft = false;
+        if (wparam & MK_CONTROL)
+            attenuation = 0.0f;
+        else
             attenuation = 4.0f;
-            SetCapture(hwnd);
-            return true;
+        ReleaseCapture();
+        return true;
+    case WM_RBUTTONDOWN:
+    {
+        POINT point;
+        GetCursorPos(&point);
+        mousePos = D3DXVECTOR2(float(point.x), float(point.y));
+        draggingRight = true;
+        SetCapture(hwnd);
+        return true;
+    }
+    case WM_RBUTTONUP:
+    {
+        draggingRight = false;
+        ReleaseCapture();
+        return true;
+    }
+    case WM_MBUTTONDOWN:
+    {
+        POINT point;
+        GetCursorPos(&point);
+        mousePos = D3DXVECTOR2(float(point.x), float(point.y));
+        draggingMiddle = true;
+        SetCapture(hwnd);
+        return true;
+    }
+    case WM_MBUTTONUP:
+    {
+        draggingMiddle = false;
+        ReleaseCapture();
+        return true;
+    }
+    case WM_MOUSEMOVE:
+    {
+        POINT point;
+        GetCursorPos(&point);
+        D3DXVECTOR2 newMousePos = D3DXVECTOR2(float(point.x), float(point.y));
+        if (draggingLeft)
+        {
+            D3DXVECTOR2 delta = newMousePos - mousePos;
+            angularVelocity -= delta;
+            mousePos = newMousePos;
         }
-        case WM_LBUTTONUP:
+        if (draggingMiddle)
+        {
+            D3DXVECTOR2 delta = newMousePos - mousePos;
+            updatePosition(delta);
+            mousePos = newMousePos;
+        }
+        if (draggingRight)
+        {
+            distance += (newMousePos.y - mousePos.y) / 75.0f;
+            mousePos = newMousePos;
+        }
+        return true;
+    }
+    case WM_MOUSEWHEEL:
+    {
+        short value = short(HIWORD(wparam));
+        distance -= float(value) / 400.0f;
+        return 0;
+    }
+    case WM_CAPTURECHANGED:
+    {
+        if ((HWND)lparam != hwnd)
+        {
             draggingLeft = false;
-            if (wparam & MK_CONTROL)
-                attenuation = 0.0f;
-            else
-                attenuation = 4.0f;
-            ReleaseCapture();
-            return true;
-        case WM_RBUTTONDOWN: {
-            POINT point;
-            GetCursorPos(&point);
-            mousePos = D3DXVECTOR2(float(point.x), float(point.y));
-            draggingRight = true;
-            SetCapture(hwnd);
-            return true;
-        }
-        case WM_RBUTTONUP: {
-            draggingRight = false;
-            ReleaseCapture();
-            return true;
-        }
-        case WM_MBUTTONDOWN: {
-            POINT point;
-            GetCursorPos(&point);
-            mousePos = D3DXVECTOR2(float(point.x), float(point.y));
-            draggingMiddle = true;
-            SetCapture(hwnd);
-            return true;
-        }
-        case WM_MBUTTONUP: {
             draggingMiddle = false;
-            ReleaseCapture();
-            return true;
+            draggingRight = false;
         }
-        case WM_MOUSEMOVE: {
-            POINT point;
-            GetCursorPos(&point);
-            D3DXVECTOR2 newMousePos = D3DXVECTOR2(float(point.x), float(point.y));
-            if (draggingLeft) {
-                D3DXVECTOR2 delta = newMousePos - mousePos;
-                angularVelocity -= delta;
-                mousePos = newMousePos;
-            }
-            if (draggingMiddle) {
-                D3DXVECTOR2 delta = newMousePos - mousePos;
-                updatePosition(delta);
-                mousePos = newMousePos;
-            }
-            if (draggingRight) {
-                distance += (newMousePos.y - mousePos.y) / 75.0f;
-                mousePos = newMousePos;
-            }
-            return true;
-        }
-        case WM_MOUSEWHEEL: {
-            short value = short(HIWORD(wparam));
-            distance -= float(value) / 400.0f;
-            return 0;
-        }
-        case WM_CAPTURECHANGED: {
-            if ((HWND) lparam != hwnd) {
-                draggingLeft = false;
-                draggingMiddle = false;
-                draggingRight = false;
-            }
-            break;
-        }
+        break;
+    }
     }
     return 0;
 }
 
-
-void Camera::frameMove(FLOAT elapsedTime) {
+void Camera::frameMove(FLOAT elapsedTime)
+{
     angle += angularVelocity * elapsedTime / 150.0f;
     angularVelocity = angularVelocity / (1.0f + attenuation * elapsedTime);
     distance += distanceVelocity * elapsedTime / 150.0f;
@@ -153,16 +209,16 @@ void Camera::frameMove(FLOAT elapsedTime) {
     build();
 }
 
-
-void Camera::setProjection(float fov, float aspect, float nearPlane, float farPlane) {
+void Camera::setProjection(float fov, float aspect, float nearPlane, float farPlane)
+{
     D3DXMatrixPerspectiveFovLH(&projection, fov, aspect, nearPlane, farPlane);
 }
 
-
-void Camera::build() {
+void Camera::build()
+{
     D3DXMatrixTranslation(&view, -panPosition.x, -panPosition.y, distance);
 
-    D3DXMATRIX t;    
+    D3DXMATRIX t;
     D3DXMatrixRotationX(&t, angle.y);
     view = t * view;
 
@@ -176,21 +232,21 @@ void Camera::build() {
     D3DXVECTOR4 lookAtPosition4 = D3DXVECTOR4(0.0f, 0.0f, distance, 1.0f);
     D3DXVec4Transform(&lookAtPosition4, &lookAtPosition4, &viewInverse);
     lookAtPosition = D3DXVECTOR3(lookAtPosition4);
-        
+
     D3DXVECTOR4 eyePosition4 = D3DXVECTOR4(0.0f, 0.0f, 0.0f, 1.0f);
     D3DXVec4Transform(&eyePosition4, &eyePosition4, &viewInverse);
     eyePosition = D3DXVECTOR3(eyePosition4);
 }
 
-
-void Camera::updatePosition(D3DXVECTOR2 delta) {
+void Camera::updatePosition(D3DXVECTOR2 delta)
+{
     delta.x /= viewportSize.x / 2.0f;
     delta.y /= viewportSize.y / 2.0f;
 
     D3DXMATRIX transform;
     D3DXMatrixTranslation(&transform, 0.0f, 0.0f, distance);
     transform *= projection;
-    
+
     D3DXMATRIX inverse;
     float det;
     D3DXMatrixInverse(&inverse, &det, &transform);
@@ -203,8 +259,8 @@ void Camera::updatePosition(D3DXVECTOR2 delta) {
     panPosition = D3DXVECTOR2(t);
 }
 
-
-ostream &operator <<(ostream &os, const Camera &camera) {
+ostream &operator<<(ostream &os, const Camera &camera)
+{
     os << camera.distance << endl;
     os << camera.angle.x << " " << camera.angle.y << endl;
     os << camera.panPosition.x << " " << camera.panPosition.y << endl;
@@ -212,8 +268,8 @@ ostream &operator <<(ostream &os, const Camera &camera) {
     return os;
 }
 
-
-istream &operator >>(istream &is, Camera &camera) {
+istream &operator>>(istream &is, Camera &camera)
+{
     is >> camera.distance;
     is >> camera.angle.x >> camera.angle.y;
     is >> camera.panPosition.x >> camera.panPosition.y;

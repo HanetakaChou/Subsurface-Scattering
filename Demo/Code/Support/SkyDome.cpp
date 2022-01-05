@@ -28,30 +28,29 @@
  * policies, either expressed or implied, of the copyright holders.
  */
 
-
 #include <DXUT.h>
 #include <sstream>
 #include "SkyDome.h"
 using namespace std;
 
-
 SkyDome::SkyDome(ID3D10Device *device, const std::wstring &dir, float intensity)
-        : device(device),
-          intensity(intensity),
-          angle(0.0f, 0.0f) {
+    : device(device),
+      intensity(intensity),
+      angle(0.0f, 0.0f)
+{
     HRESULT hr;
     V(D3DX10CreateEffectFromResource(GetModuleHandle(NULL), L"SkyDome.fx", NULL, NULL, NULL, "fx_4_0", D3D10_SHADER_ENABLE_STRICTNESS, 0, device, NULL, NULL, &effect, NULL, NULL));
     createMesh(dir);
 }
 
-
-SkyDome::~SkyDome() {
+SkyDome::~SkyDome()
+{
     SAFE_RELEASE(effect);
     mesh.Destroy();
 }
 
-
-void SkyDome::render(const D3DXMATRIX &view, const D3DXMATRIX &projection, float scale) {
+void SkyDome::render(const D3DXMATRIX &view, const D3DXMATRIX &projection, float scale)
+{
     HRESULT hr;
 
     D3DXMATRIX world;
@@ -64,50 +63,53 @@ void SkyDome::render(const D3DXMATRIX &view, const D3DXMATRIX &projection, float
     D3DXMatrixRotationY(&t, angle.x);
     world = t * world;
 
-    V(effect->GetVariableByName("world")->AsMatrix()->SetMatrix((D3DXMATRIX) world));
-    V(effect->GetVariableByName("view")->AsMatrix()->SetMatrix((D3DXMATRIX) view));
-    V(effect->GetVariableByName("projection")->AsMatrix()->SetMatrix((D3DXMATRIX) projection));
+    V(effect->GetVariableByName("world")->AsMatrix()->SetMatrix((D3DXMATRIX)world));
+    V(effect->GetVariableByName("view")->AsMatrix()->SetMatrix((D3DXMATRIX)view));
+    V(effect->GetVariableByName("projection")->AsMatrix()->SetMatrix((D3DXMATRIX)projection));
     V(effect->GetVariableByName("intensity")->AsScalar()->SetFloat(intensity));
 
     mesh.Render(device, effect->GetTechniqueByName("RenderSkyDome"), effect->GetVariableByName("skyTex")->AsShaderResource());
 }
 
-
-void SkyDome::setDirectory(const std::wstring &dir) {
+void SkyDome::setDirectory(const std::wstring &dir)
+{
     mesh.Destroy();
     createMesh(dir);
 }
 
-
-void SkyDome::createMesh(const std::wstring &dir) {
+void SkyDome::createMesh(const std::wstring &dir)
+{
     HRESULT hr;
 
     HRSRC src = FindResource(GetModuleHandle(NULL), (dir + L"\\SkyDome.sdkmesh").c_str(), RT_RCDATA);
     HGLOBAL res = LoadResource(GetModuleHandle(NULL), src);
     UINT size = SizeofResource(GetModuleHandle(NULL), src);
-    LPBYTE data = (LPBYTE) LockResource(res);
+    LPBYTE data = (LPBYTE)LockResource(res);
 
     SDKMESH_CALLBACKS10 callbacks;
     ZeroMemory(&callbacks, sizeof(SDKMESH_CALLBACKS10));
     callbacks.pCreateTextureFromFile = &createTextureFromFile;
-    callbacks.pContext = (void *) dir.c_str();
+    callbacks.pContext = (void *)dir.c_str();
 
     V(mesh.Create(device, data, size, true, true, &callbacks));
 }
 
-
-void CALLBACK SkyDome::createTextureFromFile(ID3D10Device* device, 
+void CALLBACK SkyDome::createTextureFromFile(ID3D10Device *device,
                                              char *filename, ID3D10ShaderResourceView **shaderResourceView,
                                              void *context,
-                                             bool srgb) {
-    if (string(filename) != "default-normalmap.dds") {
+                                             bool srgb)
+{
+    if (string(filename) != "default-normalmap.dds")
+    {
         HRESULT hr;
 
         wstringstream s;
-        s << ((wchar_t *) context) << "\\" << filename;
+        s << ((wchar_t *)context) << "\\" << filename;
 
         V(D3DX10CreateShaderResourceViewFromResource(device, GetModuleHandle(NULL), s.str().c_str(), NULL, NULL, shaderResourceView, NULL));
-    } else {
-        *shaderResourceView = (ID3D10ShaderResourceView *) ERROR_RESOURCE_VALUE;
+    }
+    else
+    {
+        *shaderResourceView = (ID3D10ShaderResourceView *)ERROR_RESOURCE_VALUE;
     }
 }

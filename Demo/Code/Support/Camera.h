@@ -28,7 +28,6 @@
  * policies, either expressed or implied, of the copyright holders.
  */
 
-
 #ifndef CAMERA_H
 #define CAMERA_H
 
@@ -38,72 +37,72 @@
 #include <d3dx10.h>
 #include <dxerr.h>
 
-class Camera {
-    public:
-        Camera() :
-            distance(0.0f),
-            distanceVelocity(0.0f),
-            angle(0.0f, 0.0f),
-            angularVelocity(0.0f, 0.0f),
-            panPosition(0.0f, 0.0f),
-            panVelocity(0.0f, 0.0f),
-            viewportSize(1.0f, 1.0f),
-            mousePos(0.0f, 0.0f),
-            attenuation(0.0f),
-            draggingLeft(false),
-            draggingMiddle(false),
-            draggingRight(false) { build(); }
+class Camera
+{
+public:
+    Camera() : distance(0.0f),
+               distanceVelocity(0.0f),
+               angle(0.0f, 0.0f),
+               angularVelocity(0.0f, 0.0f),
+               panPosition(0.0f, 0.0f),
+               panVelocity(0.0f, 0.0f),
+               viewportSize(1.0f, 1.0f),
+               mousePos(0.0f, 0.0f),
+               attenuation(0.0f),
+               draggingLeft(false),
+               draggingMiddle(false),
+               draggingRight(false) { build(); }
 
-        LRESULT handleMessages(HWND hwnd, UINT msg, WPARAM wparam, LPARAM lparam);
+    LRESULT handleMessages(HWND hwnd, UINT msg, WPARAM wparam, LPARAM lparam);
 
-        void frameMove(FLOAT elapsedTime);
+    void frameMove(FLOAT elapsedTime);
 
-        void setDistance(float distance) { this->distance = distance; }
-        float getDistance() const { return distance; }
+    void setDistance(float distance) { this->distance = distance; }
+    float getDistance() const { return distance; }
 
-        void setDistanceVelocity(float distanceVelocity) { this->distanceVelocity = distanceVelocity; }
-        float getDistanceVelocity() const { return distanceVelocity; }
+    void setDistanceVelocity(float distanceVelocity) { this->distanceVelocity = distanceVelocity; }
+    float getDistanceVelocity() const { return distanceVelocity; }
 
-        void setPanPosition(const D3DXVECTOR2 &panPosition) { this->panPosition = panPosition; }
-        const D3DXVECTOR2 &getPanPosition() const { return panPosition; }
+    void setPanPosition(const D3DXVECTOR2 &panPosition) { this->panPosition = panPosition; }
+    const D3DXVECTOR2 &getPanPosition() const { return panPosition; }
 
-        void setPanVelocity(const D3DXVECTOR2 &panVelocity) { this->panVelocity = panVelocity; }
-        const D3DXVECTOR2 &getPanVelocity() const { return panVelocity; }
+    void setPanVelocity(const D3DXVECTOR2 &panVelocity) { this->panVelocity = panVelocity; }
+    const D3DXVECTOR2 &getPanVelocity() const { return panVelocity; }
 
-        void setAngle(const D3DXVECTOR2 &angle) { this->angle = angle; }
-        const D3DXVECTOR2 &getAngle() const { return angle; }
+    void setAngle(const D3DXVECTOR2 &angle) { this->angle = angle; }
+    const D3DXVECTOR2 &getAngle() const { return angle; }
 
-        void setAngularVelocity(const D3DXVECTOR2 &angularVelocity) { this->angularVelocity = angularVelocity; }
-        const D3DXVECTOR2 &getAngularVelocity() const { return angularVelocity; }
+    void setAngularVelocity(const D3DXVECTOR2 &angularVelocity) { this->angularVelocity = angularVelocity; }
+    const D3DXVECTOR2 &getAngularVelocity() const { return angularVelocity; }
 
-        void setProjection(float fov, float aspect, float nearPlane, float farPlane);
-        void setViewportSize(const D3DXVECTOR2 &viewportSize) { this->viewportSize = viewportSize; }
+    void setProjection(float fov, float aspect, float nearPlane, float farPlane);
+    void setViewportSize(const D3DXVECTOR2 &viewportSize) { this->viewportSize = viewportSize; }
 
-        const D3DXMATRIX &getViewMatrix() { return view; }
-        const D3DXMATRIX &getProjectionMatrix() const { return projection; }
+    const D3DXMATRIX &getViewMatrix() { return view; }
+    const D3DXMATRIX &getProjectionMatrix() const { return projection; }
 
-        const D3DXVECTOR3 &getLookAtPosition() { return lookAtPosition; }  
-        const D3DXVECTOR3 &getEyePosition() { return eyePosition; }  
+    const D3DXVECTOR3 &getLookAtPosition() { return lookAtPosition; }
+    const D3DXVECTOR3 &getEyePosition() { return eyePosition; }
 
-        friend std::ostream& operator <<(std::ostream &os, const Camera &camera);
-        friend std::istream& operator >>(std::istream &is, Camera &camera);
+    friend std::ostream &operator<<(std::ostream &os, const Camera &camera);
+    friend std::istream &operator>>(std::istream &is, Camera &camera);
 
-    private:
-        void build();
-        void updatePosition(D3DXVECTOR2 delta);
+private:
+    void build();
+    void updatePosition(D3DXVECTOR2 delta);
 
-        float distance, distanceVelocity;
-        D3DXVECTOR2 panPosition, panVelocity;
-        D3DXVECTOR2 angle, angularVelocity;
-        D3DXVECTOR2 viewportSize;
-        
-        D3DXMATRIX view, projection;
-        D3DXVECTOR3 lookAtPosition;
-        D3DXVECTOR3 eyePosition;
+    float distance, distanceVelocity;
+    D3DXVECTOR2 panPosition, panVelocity;
+    D3DXVECTOR2 angle, angularVelocity;
+    D3DXVECTOR2 viewportSize;
 
-        D3DXVECTOR2 mousePos;
-        float attenuation;
-        bool draggingLeft, draggingMiddle, draggingRight;
+    D3DXMATRIX view, projection;
+    D3DXVECTOR3 lookAtPosition;
+    D3DXVECTOR3 eyePosition;
+
+    D3DXVECTOR2 mousePos;
+    float attenuation;
+    bool draggingLeft, draggingMiddle, draggingRight;
 };
 
 #endif

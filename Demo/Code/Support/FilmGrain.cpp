@@ -28,47 +28,90 @@
  * policies, either expressed or implied, of the copyright holders.
  */
 
-
 #include <sstream>
 #include "FilmGrain.h"
 using namespace std;
 
-
-#pragma region Useful Macros from DXUT (copy-pasted here as we prefer this to be as self-contained as possible)
+#pragma region Useful Macros from DXUT(copy - pasted here as we prefer this to be as self - contained as possible)
 #if defined(DEBUG) || defined(_DEBUG)
 #ifndef V
-#define V(x) { hr = (x); if (FAILED(hr)) { DXTrace(__FILE__, (DWORD)__LINE__, hr, L#x, true); } }
+#define V(x)                                                   \
+    {                                                          \
+        hr = (x);                                              \
+        if (FAILED(hr))                                        \
+        {                                                      \
+            DXTrace(__FILE__, (DWORD)__LINE__, hr, L#x, true); \
+        }                                                      \
+    }
 #endif
 #ifndef V_RETURN
-#define V_RETURN(x) { hr = (x); if (FAILED(hr)) { return DXTrace(__FILE__, (DWORD)__LINE__, hr, L#x, true); } }
+#define V_RETURN(x)                                                   \
+    {                                                                 \
+        hr = (x);                                                     \
+        if (FAILED(hr))                                               \
+        {                                                             \
+            return DXTrace(__FILE__, (DWORD)__LINE__, hr, L#x, true); \
+        }                                                             \
+    }
 #endif
 #else
 #ifndef V
-#define V(x) { hr = (x); }
+#define V(x)      \
+    {             \
+        hr = (x); \
+    }
 #endif
 #ifndef V_RETURN
-#define V_RETURN(x) { hr = (x); if( FAILED(hr) ) { return hr; } }
+#define V_RETURN(x)     \
+    {                   \
+        hr = (x);       \
+        if (FAILED(hr)) \
+        {               \
+            return hr;  \
+        }               \
+    }
 #endif
 #endif
 
 #ifndef SAFE_DELETE
-#define SAFE_DELETE(p) { if (p) { delete (p); (p) = NULL; } }
+#define SAFE_DELETE(p)  \
+    {                   \
+        if (p)          \
+        {               \
+            delete (p); \
+            (p) = NULL; \
+        }               \
+    }
 #endif
 #ifndef SAFE_DELETE_ARRAY
-#define SAFE_DELETE_ARRAY(p) { if (p) { delete[] (p); (p) = NULL; } }
+#define SAFE_DELETE_ARRAY(p) \
+    {                        \
+        if (p)               \
+        {                    \
+            delete[](p);     \
+            (p) = NULL;      \
+        }                    \
+    }
 #endif
 #ifndef SAFE_RELEASE
-#define SAFE_RELEASE(p) { if (p) { (p)->Release(); (p) = NULL; } }
+#define SAFE_RELEASE(p)     \
+    {                       \
+        if (p)              \
+        {                   \
+            (p)->Release(); \
+            (p) = NULL;     \
+        }                   \
+    }
 #endif
 #pragma endregion
 
-
 FilmGrain::FilmGrain(ID3D10Device *device, int width, int height, float noiseIntensity, float exposure)
-        : device(device),
-          width(width), 
-          height(height),
-          noiseIntensity(noiseIntensity),
-          exposure(exposure) {
+    : device(device),
+      width(width),
+      height(height),
+      noiseIntensity(noiseIntensity),
+      exposure(exposure)
+{
 
     HRESULT hr;
 
@@ -86,15 +129,15 @@ FilmGrain::FilmGrain(ID3D10Device *device, int width, int height, float noiseInt
     V(D3DX10CreateShaderResourceViewFromResource(device, GetModuleHandle(NULL), L"Noise.dds", &loadInfo, NULL, &noiseSRV, NULL));
 }
 
-
-FilmGrain::~FilmGrain() {
+FilmGrain::~FilmGrain()
+{
     SAFE_RELEASE(effect);
     SAFE_DELETE(quad);
     SAFE_RELEASE(noiseSRV);
 }
 
-
-void FilmGrain::go(ID3D10ShaderResourceView *src, ID3D10RenderTargetView *dst, float t) {
+void FilmGrain::go(ID3D10ShaderResourceView *src, ID3D10RenderTargetView *dst, float t)
+{
     HRESULT hr;
 
     SaveViewportsScope saveViewport(device);

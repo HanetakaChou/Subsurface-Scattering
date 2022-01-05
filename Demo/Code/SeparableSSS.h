@@ -33,7 +33,6 @@
  * policies, either expressed or implied, of the copyright holders.
  */
 
-
 #ifndef SSS_H
 #define SSS_H
 
@@ -44,9 +43,10 @@
 #include <d3dx10.h>
 #include <dxerr.h>
 
-class SeparableSSS {
-    public:
-        /**
+class SeparableSSS
+{
+public:
+    /**
          * width, height: should match the backbuffer's size.
          *
          * fovy: field of view angle used for rendering the scene, in degrees.
@@ -74,18 +74,18 @@ class SeparableSSS {
          * format: format of the temporal framebuffer. Should be left as is,
          *     unless an HDR format is desired.
          */
-        SeparableSSS(ID3D10Device *device, 
-                     int width, int height,
-                     float fovy,
-                     float sssWidth,
-                     int nSamples=17,
-                     bool stencilInitialized=true,
-                     bool followShape=true,
-                     bool separateStrengthSource=false,
-                     DXGI_FORMAT format=DXGI_FORMAT_R8G8B8A8_UNORM_SRGB);
-        ~SeparableSSS();
+    SeparableSSS(ID3D10Device *device,
+                 int width, int height,
+                 float fovy,
+                 float sssWidth,
+                 int nSamples = 17,
+                 bool stencilInitialized = true,
+                 bool followShape = true,
+                 bool separateStrengthSource = false,
+                 DXGI_FORMAT format = DXGI_FORMAT_R8G8B8A8_UNORM_SRGB);
+    ~SeparableSSS();
 
-        /**
+    /**
          * IMPORTANT NOTICE: all render targets below must not be multisampled.
          *
          * mainRTV and mainSRV: render target and shader resources of the
@@ -119,21 +119,21 @@ class SeparableSSS {
          * Note that 'depthSRV' and 'depthDSV' cannot be the views of the same
          * depth-stencil buffer.
          */
-        void go(ID3D10RenderTargetView *mainRTV,
-                ID3D10ShaderResourceView *mainSRV,
-                ID3D10ShaderResourceView *depthSRV,
-                ID3D10DepthStencilView *depthDSV,
-                ID3D10ShaderResourceView *stregthSRV = NULL,
-                int id=1);
+    void go(ID3D10RenderTargetView *mainRTV,
+            ID3D10ShaderResourceView *mainSRV,
+            ID3D10ShaderResourceView *depthSRV,
+            ID3D10DepthStencilView *depthDSV,
+            ID3D10ShaderResourceView *stregthSRV = NULL,
+            int id = 1);
 
-        /**
+    /**
          * This parameter specifies the global level of subsurface scattering,
          * or in other words, the width of the filter.
          */
-        void setWidth(float width) { this->sssWidth = width; }
-        float getWidth() const { return sssWidth; }
+    void setWidth(float width) { this->sssWidth = width; }
+    float getWidth() const { return sssWidth; }
 
-        /**
+    /**
          * @STRENGTH
          *
          * This parameter specifies the how much of the diffuse light gets into
@@ -142,46 +142,54 @@ class SeparableSSS {
          * It can be seen as a per-channel mix factor between the original
          * image, and the SSS-filtered image.
          */
-        void setStrength(D3DXVECTOR3 strength) { this->strength = strength; calculateKernel(); }
-        D3DXVECTOR3 getStrength() const { return strength; }
+    void setStrength(D3DXVECTOR3 strength)
+    {
+        this->strength = strength;
+        calculateKernel();
+    }
+    D3DXVECTOR3 getStrength() const { return strength; }
 
-        /**
+    /**
          * This parameter defines the per-channel falloff of the gradients
          * produced by the subsurface scattering events.
          *
          * It can be used to fine tune the color of the gradients.
          */
-        void setFalloff(D3DXVECTOR3 falloff) { this->falloff = falloff; calculateKernel(); }
-        D3DXVECTOR3 getFalloff() const { return falloff; }
+    void setFalloff(D3DXVECTOR3 falloff)
+    {
+        this->falloff = falloff;
+        calculateKernel();
+    }
+    D3DXVECTOR3 getFalloff() const { return falloff; }
 
-        /**
+    /**
          * This one is just for convenience, it returns the shader code of
          * current kernel.
          */
-        std::string getKernelCode() const;
+    std::string getKernelCode() const;
 
-    private:
-        D3DXVECTOR3 gaussian(float variance, float r);
-        D3DXVECTOR3 profile(float r);
-        void calculateKernel();
+private:
+    D3DXVECTOR3 gaussian(float variance, float r);
+    D3DXVECTOR3 profile(float r);
+    void calculateKernel();
 
-        ID3D10Device *device;
+    ID3D10Device *device;
 
-        float sssWidth;
-        int nSamples;
-        bool stencilInitialized;
-        D3DXVECTOR3 strength;
-        D3DXVECTOR3 falloff;
+    float sssWidth;
+    int nSamples;
+    bool stencilInitialized;
+    D3DXVECTOR3 strength;
+    D3DXVECTOR3 falloff;
 
-        ID3D10Effect *effect;
-        RenderTarget *tmpRT;
-        Quad *quad;
+    ID3D10Effect *effect;
+    RenderTarget *tmpRT;
+    Quad *quad;
 
-        std::vector<D3DXVECTOR4> kernel;
-        ID3D10EffectScalarVariable *idVariable, *sssWidthVariable;
-        ID3D10EffectVectorVariable *kernelVariable;
-        ID3D10EffectShaderResourceVariable *colorTexVariable, *depthTexVariable, *strengthTexVariable;
-        ID3D10EffectTechnique *technique;
+    std::vector<D3DXVECTOR4> kernel;
+    ID3D10EffectScalarVariable *idVariable, *sssWidthVariable;
+    ID3D10EffectVectorVariable *kernelVariable;
+    ID3D10EffectShaderResourceVariable *colorTexVariable, *depthTexVariable, *strengthTexVariable;
+    ID3D10EffectTechnique *technique;
 };
 
 #endif
