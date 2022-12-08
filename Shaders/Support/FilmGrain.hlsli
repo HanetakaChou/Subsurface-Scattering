@@ -33,19 +33,19 @@ Texture2D srcTex : register(t0);
 
 SamplerState LinearSampler : register(s0)
 {
-	Filter = MIN_MAG_MIP_LINEAR;
-	AddressU = Clamp;
-	AddressV = Clamp;
+    Filter = MIN_MAG_MIP_LINEAR;
+    AddressU = Clamp;
+    AddressV = Clamp;
 };
 
 void PassVS(float4 position : POSITION,
-	out float4 svposition : SV_POSITION,
-	inout float2 texcoord : TEXCOORD0) {
-	svposition = position;
+    out float4 svposition : SV_POSITION,
+    inout float2 texcoord : TEXCOORD0) {
+    svposition = position;
 }
 
 float4 FilmGrainPS(float4 position : SV_POSITION,
-	float2 texcoord : TEXCOORD0) : SV_TARGET{
+    float2 texcoord : TEXCOORD0) : SV_TARGET{
 float3 color = srcTex.Sample(LinearSampler, texcoord).rgb;
 return float4(color, 1.0);
 }

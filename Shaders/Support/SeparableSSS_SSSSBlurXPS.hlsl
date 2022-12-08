@@ -1,1 +1,0 @@
-#include "SeparableSSS_Demo.hlsli"

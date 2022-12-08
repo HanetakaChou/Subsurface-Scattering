@@ -26,7 +26,7 @@
       <UniqueIdentifier>{df41f0cb-6577-4a37-a955-a45854acb5fd}</UniqueIdentifier>
     </Filter>
     <Filter Include="Shaders\Support">
-      <UniqueIdentifier>{c73c2cd3-5b6e-4206-987e-9d0ae0833477}</UniqueIdentifier>
+      <UniqueIdentifier>{cfb84578-2c57-40e7-a40f-ae25169bdd60}</UniqueIdentifier>
     </Filter>
   </ItemGroup>
   <ItemGroup>
@@ -45,7 +45,7 @@
     <ClCompile Include="Code\Support\ShadowMap.cpp">
       <Filter>Code\Support</Filter>
     </ClCompile>
-    <ClCompile Include="Code\SeparableSSS.cpp">
+    <ClCompile Include="Code\SSSBlur.cpp">
       <Filter>Code</Filter>
     </ClCompile>
     <ClCompile Include="Code\Support\FilmGrain.cpp">
@@ -56,9 +56,6 @@
     </ClCompile>
     <ClCompile Include="Code\Demo.cpp">
       <Filter>Code</Filter>
-    </ClCompile>
-    <ClCompile Include="Code\Support\AddSpecular.cpp">
-      <Filter>Code\Support</Filter>
     </ClCompile>
     <ClCompile Include="DXUT\Core\DXUTDevice11.cpp">
       <Filter>DXUT\Core</Filter>
@@ -73,9 +70,6 @@
       <Filter>DXUT\Optional</Filter>
     </ClCompile>
     <ClCompile Include="DXUT\Optional\DXUTgui.cpp">
-      <Filter>DXUT\Optional</Filter>
-    </ClCompile>
-    <ClCompile Include="DXUT\Core\DXUTmisc.cpp">
       <Filter>DXUT\Optional</Filter>
     </ClCompile>
     <ClCompile Include="DXUT\Optional\DXUTres.cpp">
@@ -99,6 +93,9 @@
     <ClCompile Include="DXUT\Core\dxerr.cpp">
       <Filter>DXUT\Core</Filter>
     </ClCompile>
+    <ClCompile Include="DXUT\Core\DXUTmisc.cpp">
+      <Filter>DXUT\Core</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Code\Support\Camera.h">
@@ -119,13 +116,10 @@
     <ClInclude Include="Code\Support\Timer.h">
       <Filter>Code\Support</Filter>
     </ClInclude>
-    <ClInclude Include="Code\SeparableSSS.h">
+    <ClInclude Include="Code\SSSBlur.h">
       <Filter>Code</Filter>
     </ClInclude>
     <ClInclude Include="Code\Support\Main.h">
-      <Filter>Code\Support</Filter>
-    </ClInclude>
-    <ClInclude Include="Code\Support\AddSpecular.h">
       <Filter>Code\Support</Filter>
     </ClInclude>
     <ClInclude Include="DXUT\Core\DXUTDevice11.h">
@@ -141,9 +135,6 @@
       <Filter>DXUT\Optional</Filter>
     </ClInclude>
     <ClInclude Include="DXUT\Optional\DXUTgui.h">
-      <Filter>DXUT\Optional</Filter>
-    </ClInclude>
-    <ClInclude Include="DXUT\Core\DXUTmisc.h">
       <Filter>DXUT\Optional</Filter>
     </ClInclude>
     <ClInclude Include="DXUT\Optional\DXUTres.h">
@@ -170,12 +161,12 @@
     <ClInclude Include="Code\Demo.h">
       <Filter>Code</Filter>
     </ClInclude>
+    <ClInclude Include="DXUT\Core\DXUTmisc.h">
+      <Filter>DXUT\Core</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
-    <None Include="Shaders\Translucency.hlsli">
-      <Filter>Shaders</Filter>
-    </None>
-    <None Include="Shaders\Support\AddSpecular.hlsli">
+    <None Include="Shaders\Support\SSS_Blur.hlsli">
       <Filter>Shaders\Support</Filter>
     </None>
     <None Include="Shaders\Support\FilmGrain.hlsli">
@@ -184,16 +175,28 @@
     <None Include="Shaders\Support\Main.hlsli">
       <Filter>Shaders\Support</Filter>
     </None>
-    <None Include="Shaders\Support\SeparableSSS_Demo.hlsli">
-      <Filter>Shaders\Support</Filter>
-    </None>
     <None Include="Shaders\Support\ShadowMap.hlsli">
       <Filter>Shaders\Support</Filter>
     </None>
     <None Include="Shaders\Support\SkyDome.hlsli">
       <Filter>Shaders\Support</Filter>
     </None>
-    <None Include="Shaders\SeparableSSS.hlsli">
+    <None Include="Shaders\subsurface_scattering_disney_blur.hlsli">
+      <Filter>Shaders</Filter>
+    </None>
+    <None Include="Shaders\subsurface_scattering_disney_transmittance.hlsli">
+      <Filter>Shaders</Filter>
+    </None>
+    <None Include="Shaders\low_discrepancy_sequence.hlsli">
+      <Filter>Shaders</Filter>
+    </None>
+    <None Include="Shaders\math_consts.hlsli">
+      <Filter>Shaders</Filter>
+    </None>
+    <None Include="Shaders\brdf.hlsli">
+      <Filter>Shaders</Filter>
+    </None>
+    <None Include="Shaders\subsurface_scattering_texturing_mode.hlsli">
       <Filter>Shaders</Filter>
     </None>
   </ItemGroup>
@@ -201,10 +204,10 @@
     <FxCompile Include="Shaders\Support\SkyDome_SkyDomeVS.hlsl">
       <Filter>Shaders\Support</Filter>
     </FxCompile>
-    <FxCompile Include="Shaders\Support\AddSpecular_AddSpecularPS.hlsl">
+    <FxCompile Include="Shaders\Support\SSS_Blur_PS.hlsl">
       <Filter>Shaders\Support</Filter>
     </FxCompile>
-    <FxCompile Include="Shaders\Support\AddSpecular_PassVS.hlsl">
+    <FxCompile Include="Shaders\Support\SSS_Blur_VS.hlsl">
       <Filter>Shaders\Support</Filter>
     </FxCompile>
     <FxCompile Include="Shaders\Support\FilmGrain_FilmGrainPS.hlsl">
@@ -217,15 +220,6 @@
       <Filter>Shaders\Support</Filter>
     </FxCompile>
     <FxCompile Include="Shaders\Support\Main_RenderVS.hlsl">
-      <Filter>Shaders\Support</Filter>
-    </FxCompile>
-    <FxCompile Include="Shaders\Support\SeparableSSS_SSSSBlurVS.hlsl">
-      <Filter>Shaders\Support</Filter>
-    </FxCompile>
-    <FxCompile Include="Shaders\Support\SeparableSSS_SSSSBlurXPS.hlsl">
-      <Filter>Shaders\Support</Filter>
-    </FxCompile>
-    <FxCompile Include="Shaders\Support\SeparableSSS_SSSSBlurYPS.hlsl">
       <Filter>Shaders\Support</Filter>
     </FxCompile>
     <FxCompile Include="Shaders\Support\ShadowMap_ShadowMapVS.hlsl">

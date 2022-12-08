@@ -23,25 +23,25 @@
  * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
  * POSSIBILITY OF SUCH DAMAGE.
  *
- * The views and conclusions contained in the software and documentation are
+ * The views and conclusions contained in the software and documentation are 
  * those of the authors and should not be interpreted as representing official
  * policies, either expressed or implied, of the copyright holders.
  */
 
 cbuffer UpdatedPerFrame : register(b0)
 {
-	row_major float4x4 view;
-	row_major float4x4 projection;
+    row_major float4x4 view;
+    row_major float4x4 projection;
 }
 
 cbuffer UpdatedPerObject : register(b1)
 {
-	row_major float4x4 world;
+    row_major float4x4 world;
 }
 
-float4 ShadowMapVS(float4 position : POSITION0) : SV_POSITION
+float4 ShadowMapVS(float4 position : POSITION0) : SV_POSITION 
 {
-	float4x4 worldViewProjection = mul(mul(world, view), projection);
-	float4 pos = mul(position, worldViewProjection);
-	return pos;
+    float4x4 worldViewProjection = mul(mul(world, view), projection);
+    float4 pos = mul(position, worldViewProjection);
+    return pos;
 }

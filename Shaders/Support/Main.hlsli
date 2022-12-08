@@ -37,43 +37,53 @@ SamplerState AnisotropicSampler : register(s2);
 SamplerComparisonState ShadowSampler : register(s3);
 
 // And include our header!
-#include "../Translucency.hlsli"
+#include "../brdf.hlsli"
+#include "../subsurface_scattering_texturing_mode.hlsli"
+#include "../subsurface_scattering_disney_transmittance.hlsli"
 
-#define N_LIGHTS 5 
+#define N_LIGHTS 5
+
+#define PI 3.14159265358979323846
 
 struct Light
 {
-	row_major float4x4 viewProjection;
-	row_major float4x4 projection;
-	float3 position;
-	float3 direction;
-	float4 color_attenuation;
-	float falloffStart;
-	float falloffWidth;
-	float farPlane;
-	float bias;
+    row_major float4x4 viewProjection;
+    row_major float4x4 projection;
+    float3 position;
+    float3 direction;
+    float4 color_attenuation;
+    float falloffStart;
+    float falloffWidth;
+    float farPlane;
+    float bias;
 };
 
 cbuffer UpdatedPerFrame : register(b0)
 {
-	float3 cameraPosition;
-	row_major float4x4 currProj;
-	Light lights[N_LIGHTS];
+    float3 cameraPosition;
+    row_major float4x4 currProj;
+    Light lights[N_LIGHTS];
 }
 
 cbuffer UpdatedPerObject : register(b1)
 {
-	row_major float4x4 currWorldViewProj;
-	row_major float4x4 world;
-	row_major float4x4 worldInverseTranspose;
-	float bumpiness;
-	float specularIntensity;
-	float specularRoughness;
-	float specularFresnel;
-	float translucency;
-	float sssEnabled;
-	float sssWidth;
-	float ambient;
+    row_major float4x4 currWorldViewProj;
+    row_major float4x4 world;
+    row_major float4x4 worldInverseTranspose;
+    float3 scatteringDistance;
+    float padding_scatteringDistance;
+    float3 transmittanceTint;
+    float padding_transmittanceTint;
+    float bumpiness;
+    float specularIntensity;
+    float specularRoughness;
+    float specularFresnel;
+    float specularlightEnabled;
+    float skylightEnabled;
+    float sssEnabled;
+    float worldScale;
+    float postscatterEnabled;
+    float ambient;
 }
 
 Texture2D diffuseTex : register(t0);
@@ -85,299 +95,320 @@ Texture2D shadowMaps[N_LIGHTS] : register(t6);
 
 void ShadowMapArray_GetDimensions(float LightIndex, out float Width, out float Height)
 {
-	[branch]
-	if (0 == LightIndex)
-	{
-		shadowMaps[0].GetDimensions(Width, Height);
-	}
-	else if (1 == LightIndex)
-	{
-		shadowMaps[1].GetDimensions(Width, Height);
-	}
-	else if (2 == LightIndex)
-	{
-		shadowMaps[2].GetDimensions(Width, Height);
-	}
-	else if (3 == LightIndex)
-	{
-		shadowMaps[3].GetDimensions(Width, Height);
-	}
-	else if (4 == LightIndex)
-	{
-		shadowMaps[4].GetDimensions(Width, Height);
-	}
-	else
-	{
-		// 5 == N_LIGHTS
-		Width = 1.0;
-		Height = 1.0;
-	}
+    [branch]
+    if (0 == LightIndex)
+    {
+        shadowMaps[0].GetDimensions(Width, Height);
+    }
+    else if (1 == LightIndex)
+    {
+        shadowMaps[1].GetDimensions(Width, Height);
+    }
+    else if (2 == LightIndex)
+    {
+        shadowMaps[2].GetDimensions(Width, Height);
+    }
+    else if (3 == LightIndex)
+    {
+        shadowMaps[3].GetDimensions(Width, Height);
+    }
+    else if (4 == LightIndex)
+    {
+        shadowMaps[4].GetDimensions(Width, Height);
+    }
+    else
+    {
+        // 5 == N_LIGHTS
+        Width = 1.0;
+        Height = 1.0;
+    }
 }
 
 float ShadowMapArray_SampleCmpLevelZero(float LightIndex, float2 Location, float CompareValue)
 {
-	float tmp;
-	[branch]
-	if (0 == LightIndex)
-	{
-		tmp = shadowMaps[0].SampleCmpLevelZero(ShadowSampler, Location, CompareValue).r;
-	}
-	else if (1 == LightIndex)
-	{
-		tmp = shadowMaps[1].SampleCmpLevelZero(ShadowSampler, Location, CompareValue).r;
-	}
-	else if (2 == LightIndex)
-	{
-		tmp = shadowMaps[2].SampleCmpLevelZero(ShadowSampler, Location, CompareValue).r;
-	}
-	else if (3 == LightIndex)
-	{
-		tmp = shadowMaps[3].SampleCmpLevelZero(ShadowSampler, Location, CompareValue).r;
-	}
-	else if (4 == LightIndex)
-	{
-		tmp = shadowMaps[4].SampleCmpLevelZero(ShadowSampler, Location, CompareValue).r;
-	}
-	else
-	{
-		// 5 == N_LIGHTS
-		tmp = 0.0;
-	}
-	return tmp;
+    float tmp;
+    [branch]
+    if (0 == LightIndex)
+    {
+        tmp = shadowMaps[0].SampleCmpLevelZero(ShadowSampler, Location, CompareValue).r;
+    }
+    else if (1 == LightIndex)
+    {
+        tmp = shadowMaps[1].SampleCmpLevelZero(ShadowSampler, Location, CompareValue).r;
+    }
+    else if (2 == LightIndex)
+    {
+        tmp = shadowMaps[2].SampleCmpLevelZero(ShadowSampler, Location, CompareValue).r;
+    }
+    else if (3 == LightIndex)
+    {
+        tmp = shadowMaps[3].SampleCmpLevelZero(ShadowSampler, Location, CompareValue).r;
+    }
+    else if (4 == LightIndex)
+    {
+        tmp = shadowMaps[4].SampleCmpLevelZero(ShadowSampler, Location, CompareValue).r;
+    }
+    else
+    {
+        // 5 == N_LIGHTS
+        tmp = 0.0;
+    }
+    return tmp;
 }
 
 float ShadowMapArray_SampleLevel(float LightIndex, float2 Location)
 {
-	float tmp;
-	[branch]
-	if (0 == LightIndex)
-	{
-		tmp = shadowMaps[0].SampleLevel(LinearSampler, Location, 0.0).r;
-	}
-	else if (1 == LightIndex)
-	{
-		tmp = shadowMaps[1].SampleLevel(LinearSampler, Location, 0.0).r;
-	}
-	else if (2 == LightIndex)
-	{
-		tmp = shadowMaps[2].SampleLevel(LinearSampler, Location, 0.0).r;
-	}
-	else if (3 == LightIndex)
-	{
-		tmp = shadowMaps[3].SampleLevel(LinearSampler, Location, 0.0).r;
-	}
-	else if (4 == LightIndex)
-	{
-		tmp = shadowMaps[4].SampleLevel(LinearSampler, Location, 0.0).r;
-	}
-	else
-	{
-		// 5 == N_LIGHTS
-		tmp = 0.0;
-	}
-	return tmp;
+    float tmp;
+    [branch]
+    if (0 == LightIndex)
+    {
+        tmp = shadowMaps[0].SampleLevel(LinearSampler, Location, 0.0).r;
+    }
+    else if (1 == LightIndex)
+    {
+        tmp = shadowMaps[1].SampleLevel(LinearSampler, Location, 0.0).r;
+    }
+    else if (2 == LightIndex)
+    {
+        tmp = shadowMaps[2].SampleLevel(LinearSampler, Location, 0.0).r;
+    }
+    else if (3 == LightIndex)
+    {
+        tmp = shadowMaps[3].SampleLevel(LinearSampler, Location, 0.0).r;
+    }
+    else if (4 == LightIndex)
+    {
+        tmp = shadowMaps[4].SampleLevel(LinearSampler, Location, 0.0).r;
+    }
+    else
+    {
+        // 5 == N_LIGHTS
+        tmp = 0.0;
+    }
+    return tmp;
 }
 
-struct RenderV2P {
-	// Position and texcoord:
-	float4 svPosition : SV_POSITION;
-	float2 texcoord : TEXCOORD0;
+struct RenderV2P
+{
+    // Position and texcoord:
+    float4 svPosition : SV_POSITION;
+    float2 texcoord : TEXCOORD0;
 
-	// For shading:
-	centroid float3 worldPosition : TEXCOORD3;
-	centroid float3 view : TEXCOORD4;
-	centroid float3 normal : TEXCOORD5;
-	centroid float3 tangent : TEXCOORD6;
+    // For shading:
+    centroid float3 worldPosition : TEXCOORD3;
+    centroid float3 view : TEXCOORD4;
+    centroid float3 normal : TEXCOORD5;
+    centroid float3 tangent : TEXCOORD6;
 };
 
-RenderV2P RenderVS(float4 position : POSITION0,
-	float3 normal : NORMAL,
-	float3 tangent : TANGENT,
-	float2 texcoord : TEXCOORD0) {
-	RenderV2P output;
+RenderV2P RenderVS(float4 position
+                   : POSITION0,
+                     float3 normal
+                   : NORMAL,
+                     float3 tangent
+                   : TANGENT,
+                     float2 texcoord
+                   : TEXCOORD0)
+{
+    RenderV2P output;
 
-	// Transform to homogeneous projection space:
-	output.svPosition = mul(position, currWorldViewProj);
+    // Transform to homogeneous projection space:
+    output.svPosition = mul(position, currWorldViewProj);
 
-	// Output texture coordinates:
-	output.texcoord = texcoord;
+    // Output texture coordinates:
+    output.texcoord = texcoord;
 
-	// Build the vectors required for shading:
-	output.worldPosition = mul(position, world).xyz;
-	output.view = cameraPosition - output.worldPosition;
-	output.normal = mul(normal, (float3x3) worldInverseTranspose);
-	output.tangent = mul(tangent, (float3x3) worldInverseTranspose);
+    // Build the vectors required for shading:
+    output.worldPosition = mul(position, world).xyz;
+    output.view = cameraPosition - output.worldPosition;
+    output.normal = mul(normal, (float3x3)worldInverseTranspose);
+    output.tangent = mul(tangent, (float3x3)worldInverseTranspose);
 
-	return output;
+    return output;
 }
 
+float3 UnpackNormalMap(float2 TextureSample);
 
-float3 BumpMap(Texture2D normalTex, float2 texcoord) {
-	float3 bump;
-	bump.xy = -1.0 + 2.0 * normalTex.Sample(AnisotropicSampler, texcoord).gr;
-	bump.z = sqrt(1.0 - bump.x * bump.x - bump.y * bump.y);
-	return normalize(bump);
+float ShadowPCF(float3 worldPosition, int i, int samples, float width);
+
+float4 RenderPS(
+    RenderV2P input, 
+    out float depth : SV_TARGET1, 
+    out float4 albedoOut : SV_TARGET2, 
+    out float4 sssTotalDiffuseReflectancePreScatterMultiplyFormFactorOut : SV_TARGET3
+) : SV_TARGET0
+{
+    // We build the TBN frame here in order to be able to use the bump map for IBL:
+    input.normal = normalize(input.normal);
+    input.tangent = normalize(input.tangent);
+    float3 bitangent = cross(input.normal, input.tangent);
+    float3x3 tbn = transpose(float3x3(input.tangent, bitangent, input.normal));
+
+    // Transform bumped normal to world space, in order to use IBL for ambient lighting:
+    float3 tangentNormal = lerp(float3(0.0, 0.0, 1.0), UnpackNormalMap(normalTex.Sample(AnisotropicSampler, input.texcoord).gr), bumpiness);
+    float3 normal = mul(tbn, tangentNormal);
+    input.view = normalize(input.view);
+
+    // Fetch albedo, specular parameters and static ambient occlusion:
+    float4 albedoAndStrength = diffuseTex.Sample(AnisotropicSampler, input.texcoord);
+    float3 specularAO = specularAOTex.Sample(LinearSampler, input.texcoord).rgb;
+    float3 total_diffuse_reflectance_pre_scatter;
+    [branch]
+    if (sssEnabled > 0.0f)
+    {
+        total_diffuse_reflectance_pre_scatter = subsurface_scattering_total_diffuse_reflectance_pre_scatter_from_albedo((postscatterEnabled > 0.0), albedoAndStrength.rgb);
+    }
+    else
+    {
+        total_diffuse_reflectance_pre_scatter = albedoAndStrength.rgb;
+    }
+    float strength = albedoAndStrength.a;
+    float occlusion = specularAO.b;
+    float specularTint = specularAO.r * specularIntensity;
+    float roughness = (specularAO.g / 0.3) * specularRoughness;
+
+    // Initialize the output:
+    float3 diffuseAccumulation = float3(0.0, 0.0, 0.0);
+    float3 specularAccumulation = float3(0.0, 0.0, 0.0);
+
+    for (int i = 0; i < N_LIGHTS; i++)
+    {
+        float3 light = normalize(lights[i].position - input.worldPosition);
+
+        // Calculate attenuation:
+        float light_attenuation;
+        {
+            float spot = dot(lights[i].direction, -light);
+            if (spot > lights[i].falloffStart)
+            {
+                float dist = length(lights[i].position - input.worldPosition);
+                float curve = min(pow(dist / lights[i].farPlane, 6.0), 1.0);
+                float attenuation = lerp(1.0 / (1.0 + lights[i].color_attenuation.w * dist * dist), 0.0, curve);
+
+                // And the spot light falloff:
+                spot = saturate((spot - lights[i].falloffStart) / lights[i].falloffWidth);
+
+                light_attenuation = attenuation * spot;
+            }
+            else
+            {
+                light_attenuation = 0.0f;
+            }
+        }
+
+        if (light_attenuation > 0.0f)
+        {
+            // Add the diffuse and specular components:
+            float ndotl = saturate(dot(light, normal));
+            if (ndotl > 0.0f)
+            {
+                float3 halfn = normalize(input.view + light);
+                float ndotv = saturate(dot(normal, input.view));
+                float vdoth = saturate(dot(input.view, halfn));
+                float ndoth = saturate(dot(normal, halfn));
+
+                // And also the shadowing:
+                float shadow = ShadowPCF(input.worldPosition, i, 3, 1.0);
+                if (shadow > 0.0f)
+                {
+                    diffuseAccumulation += Diffuse_Disney(total_diffuse_reflectance_pre_scatter, roughness, ndotv, ndotl, vdoth) * ndotl * shadow * light_attenuation * lights[i].color_attenuation.xyz;
+
+                    if (specularlightEnabled > 0.0f)
+                    {
+                        specularAccumulation += specularTint * Dual_Specular_TR(0.75, 1.30, 0.85, specularFresnel * float3(1.0, 1.0, 1.0), roughness, strength, ndotv, ndotl, ndoth, vdoth) * ndotl * shadow * light_attenuation * lights[i].color_attenuation.xyz;
+                    }
+                }
+            }
+
+            // Add the transmittance component:
+            if (sssEnabled > 0.0f)
+            {
+                float transmittanceLightAttenuation = EvaluateTransmittanceLightAttenuation(input.normal, light);
+                if (transmittanceLightAttenuation > 0.0)
+                {
+                    /**
+                     * First we shrink the position inwards the surface to avoid artifacts:
+                     * (Note that this can be done once for all the lights)
+                     */
+                    float metersPerUnit = worldScale;
+                    float4 shrinkedPos = float4(input.worldPosition - 0.000625 / metersPerUnit * input.normal, 1.0);
+
+                    // Faceworks
+                    // g_deepScatterNormalOffset = -0.0007f
+
+                    /**
+                     * Now we calculate the thickness from the light point of view:
+                     */
+                    float4 shadowPosition = mul(shrinkedPos, lights[i].viewProjection);
+                    shadowPosition /= shadowPosition.w;
+                    float d1 = lights[i].projection[3][2] / (ShadowMapArray_SampleLevel(i, shadowPosition.xy) - lights[i].projection[2][2]);
+                    float d2 = lights[i].projection[3][2] / (shadowPosition.z - lights[i].projection[2][2]);
+                    float worldDistance = abs(d2 - d1);
+
+                    // The shader code is merely to transform the thickness from world units to mm.
+                    float thicknessInUnits = abs(d2 - d1);
+                    float thicknessInMillimeters = 1000.0 * metersPerUnit * thicknessInUnits;
+
+                    diffuseAccumulation += transmittanceTint * EvaluateTransmittance(scatteringDistance, thicknessInMillimeters) * transmittanceLightAttenuation * light_attenuation * lights[i].color_attenuation.xyz;
+                }
+            }
+        }
+    }
+
+    // Add the ambient component:
+    if (skylightEnabled > 0.0f)
+    {
+        diffuseAccumulation += total_diffuse_reflectance_pre_scatter * occlusion * ambient * irradianceTex.Sample(LinearSampler, normal).rgb;
+    }
+
+    // Store the ViewPositionZ value:
+    depth = input.svPosition.z;
+
+    // Store the Albedo and the SSS strength:
+    albedoOut = albedoAndStrength;
+
+    if (sssEnabled > 0.0f)
+    {
+        // Store the SSS 'total_diffuse_reflectance_pre_scatter * form_factor'
+        sssTotalDiffuseReflectancePreScatterMultiplyFormFactorOut = float4(diffuseAccumulation, 1.0);
+
+        return float4(specularAccumulation, 1.0);
+    }
+    else
+    {
+        sssTotalDiffuseReflectancePreScatterMultiplyFormFactorOut = float4(0.0, 0.0, 0.0, 1.0);
+
+        return float4(diffuseAccumulation + specularAccumulation, 1.0);
+    }
 }
 
-
-float Fresnel(float3 half, float3 view, float f0) {
-	float base = 1.0 - dot(view, half);
-	float exponential = pow(base, 5.0);
-	return exponential + f0 * (1.0 - exponential);
+float3 UnpackNormalMap(float2 TextureSample)
+{
+    float2 NormalXY = TextureSample * float2(2.0f, 2.0f) + float2(-1.0f, -1.0f);
+    float NormalZ = sqrt(saturate(1.0f - dot(NormalXY, NormalXY)));
+    return float3(NormalXY.xy, NormalZ);
 }
 
-float SpecularKSK(Texture2D beckmannTex, float3 normal, float3 light, float3 view, float roughness) {
-	float3 half = view + light;
-	float3 halfn = normalize(half);
-
-	float ndotl = max(dot(normal, light), 0.0);
-	float ndoth = max(dot(normal, halfn), 0.0);
-
-	float ph = pow(2.0 * beckmannTex.SampleLevel(LinearSampler, float2(ndoth, roughness), 0).r, 10.0);
-	float f = lerp(0.25, Fresnel(halfn, view, 0.028), specularFresnel);
-	float ksk = max(ph * f / dot(half, half), 0.0);
-
-	return ndotl * ksk;
-}
-
-float ShadowPCF(float3 worldPosition, int i, int samples, float width) {
-	float4 shadowPosition = mul(float4(worldPosition, 1.0), lights[i].viewProjection);
-	shadowPosition.xy /= shadowPosition.w;
-	shadowPosition.z += lights[i].bias;
+float ShadowPCF(float3 worldPosition, int i, int samples, float width)
+{
+    float4 shadowPosition = mul(float4(worldPosition, 1.0), lights[i].viewProjection);
+    shadowPosition.xy /= shadowPosition.w;
+    shadowPosition.z += lights[i].bias;
 
 	float w;
 	float h;
 	ShadowMapArray_GetDimensions(i, w, h);
 
-	float shadow = 0.0;
-	float offset = (samples - 1.0) / 2.0;
-	[unroll]
-	for (float x = -offset; x <= offset; x += 1.0) {
-		[unroll]
-		for (float y = -offset; y <= offset; y += 1.0) 
-		{
-			float2 pos = shadowPosition.xy + width * float2(x, y) / w;
+    float shadow = 0.0;
+    float offset = (samples - 1.0) / 2.0;
+    for (float x = -offset; x <= offset; x += 1.0)
+    {
+        for (float y = -offset; y <= offset; y += 1.0)
+        {
+            float2 pos = shadowPosition.xy + width * float2(x, y) / w;
 			shadow += ShadowMapArray_SampleCmpLevelZero(i, pos, shadowPosition.z / lights[i].farPlane);
-		}
-	}
-	shadow /= samples * samples;
-	return shadow;
-}
-
-#define HAS_SPECULAR 1
-#define HAS_SKYLIGHT 1
-
-float4 RenderPS(RenderV2P input,
-	out float depth : SV_TARGET1,
-	out float4 specularColor : SV_TARGET3) : SV_TARGET0{
-		// We build the TBN frame here in order to be able to use the bump map for IBL:
-		input.normal = normalize(input.normal);
-		input.tangent = normalize(input.tangent);
-		float3 bitangent = cross(input.normal, input.tangent);
-		float3x3 tbn = transpose(float3x3(input.tangent, bitangent, input.normal));
-
-		// Transform bumped normal to world space, in order to use IBL for ambient lighting:
-		float3 tangentNormal = lerp(float3(0.0, 0.0, 1.0), BumpMap(normalTex, input.texcoord), bumpiness);
-		float3 normal = mul(tbn, tangentNormal);
-		input.view = normalize(input.view);
-
-		// Fetch albedo, specular parameters and static ambient occlusion:
-		float4 albedo = diffuseTex.Sample(AnisotropicSampler, input.texcoord);
-	#if HAS_SPECULAR == 1 || HAS_SKYLIGHT == 1
-		float3 specularAO = specularAOTex.Sample(LinearSampler, input.texcoord).rgb;
-	#endif
-
-	#if HAS_SKYLIGHT == 1
-		float occlusion = specularAO.b;
-	#endif
-
-	#if HAS_SPECULAR == 1 
-		float intensity = specularAO.r * specularIntensity;
-		float roughness = (specularAO.g / 0.3) * specularRoughness;
-	#endif
-
-		// Initialize the output:
-		float4 color = float4(0.0, 0.0, 0.0, 0.0);
-		specularColor = float4(0.0, 0.0, 0.0, 0.0);
-
-		for (int i = 0; i < N_LIGHTS; i++) {
-			float3 light = lights[i].position - input.worldPosition;
-			float dist = length(light);
-			light /= dist;
-
-			float spot = dot(lights[i].direction, -light);
-			[flatten]
-			if (spot > lights[i].falloffStart) {
-				// Calculate attenuation:
-				float curve = min(pow(dist / lights[i].farPlane, 6.0), 1.0);
-				float attenuation = lerp(1.0 / (1.0 + lights[i].color_attenuation.w * dist * dist), 0.0, curve);
-
-				// And the spot light falloff:
-				spot = saturate((spot - lights[i].falloffStart) / lights[i].falloffWidth);
-
-				// Calculate some terms we will use later on:
-				float3 f1 = lights[i].color_attenuation.xyz * attenuation * spot;
-				float3 f2 = albedo.rgb * f1;
-
-				// Calculate the diffuse and specular lighting:
-				float3 diffuse = saturate(dot(light, normal));
-	#if HAS_SPECULAR == 1
-				float specular = intensity * SpecularKSK(beckmannTex, normal, light, input.view, roughness);
-	#endif
-
-				// And also the shadowing:
-				float shadow = ShadowPCF(input.worldPosition, i, 3, 1.0);
-
-				// Add the diffuse and specular components:
-				#ifdef SEPARATE_SPECULARS
-				color.rgb += shadow * f2 * diffuse;
-	#if HAS_SPECULAR == 1
-				specularColor.rgb += shadow * f1 * specular;
-	#endif
-				#else
-				color.rgb += shadow * (f2 * diffuse + f1 * specular);
-				#endif
-
-				// Add the transmittance component:
-				if (sssEnabled > 0.0f)
-				{
-					/**
-					* First we shrink the position inwards the surface to avoid artifacts:
-					* (Note that this can be done once for all the lights)
-					*/
-					float metersPerUnit = 3.0 * 0.001 * 0.5 / sssWidth;
-					float4 shrinkedPos = float4(input.worldPosition - 0.000625 / metersPerUnit * input.normal, 1.0);
-
-					// Faceworks
-					// g_deepScatterNormalOffset = -0.0007f
-
-					/**
-					 * Now we calculate the thickness from the light point of view:
-					 */
-					float4 shadowPosition = mul(shrinkedPos, lights[i].viewProjection);
-					shadowPosition /= shadowPosition.w;
-					float d1 = lights[i].projection[3][2] / (ShadowMapArray_SampleLevel(i, shadowPosition.xy) - lights[i].projection[2][2]);
-					float d2 = lights[i].projection[3][2] / (shadowPosition.z - lights[i].projection[2][2]);
-					float worldDistance = abs(d2 - d1);
-
-					color.rgb += f2 * SSSSTransmittance(translucency, sssWidth, input.normal, light, worldDistance);
-				}
-			}
-		}
-
-		// Add the ambient component:
-	#if HAS_SKYLIGHT == 1
-		color.rgb += occlusion * ambient * albedo.rgb * irradianceTex.Sample(LinearSampler, normal).rgb;
-	#endif
-
-		// Store the SSS strength:
-		specularColor.a = albedo.a;
-
-		// Store the ViewPositionZ value:
-		depth = currProj[3][2] / (input.svPosition.z - currProj[2][2]);
-
-		// Store the SSS strength:
-		color.a = albedo.a;
-
-		return color;
+        }
+    }
+    shadow /= samples * samples;
+    return shadow;
 }

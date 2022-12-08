@@ -124,7 +124,7 @@ LRESULT Camera::handleMessages(HWND hwnd, UINT msg, WPARAM wparam, LPARAM lparam
 		break;
 	}
 	}
-	return 0;
+	return FALSE;
 }
 
 void Camera::frameMove(FLOAT elapsedTime)

@@ -22,7 +22,7 @@ struct Light
 	float attenuation;
 	float farPlane;
 	float bias;
-	ShadowMap *shadowMap;
+	ShadowMap* shadowMap;
 };
 
 const int N_LIGHTS = 5;
