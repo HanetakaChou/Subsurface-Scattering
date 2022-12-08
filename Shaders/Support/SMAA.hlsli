@@ -498,8 +498,8 @@
 #define SMAA_BRANCH [branch]
 #endif
 #if SMAA_HLSL_4 == 1 || SMAA_HLSL_4_1 == 1
-SamplerState LinearSampler{ Filter = MIN_MAG_LINEAR_MIP_POINT; AddressU = Clamp; AddressV = Clamp; };
-SamplerState PointSampler{ Filter = MIN_MAG_MIP_POINT; AddressU = Clamp; AddressV = Clamp; };
+SamplerState LinearSampler { Filter = MIN_MAG_LINEAR_MIP_POINT; AddressU = Clamp; AddressV = Clamp; };
+SamplerState PointSampler { Filter = MIN_MAG_MIP_POINT; AddressU = Clamp; AddressV = Clamp; };
 #define SMAATexture2D Texture2D
 #define SMAASampleLevelZero(tex, coord) tex.SampleLevel(LinearSampler, coord, 0)
 #define SMAASampleLevelZeroPoint(tex, coord) tex.SampleLevel(PointSampler, coord, 0)

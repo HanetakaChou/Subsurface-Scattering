@@ -235,8 +235,8 @@ float4 kernel[] = {
 #define SSSS_UNROLL [unroll]
 #endif
 #if SSSS_HLSL_4 == 1
-SamplerState LinearSampler{ Filter = MIN_MAG_LINEAR_MIP_POINT; AddressU = Clamp; AddressV = Clamp; };
-SamplerState PointSampler{ Filter = MIN_MAG_MIP_POINT; AddressU = Clamp; AddressV = Clamp; };
+SamplerState LinearSampler { Filter = MIN_MAG_LINEAR_MIP_POINT; AddressU = Clamp; AddressV = Clamp; };
+SamplerState PointSampler { Filter = MIN_MAG_MIP_POINT; AddressU = Clamp; AddressV = Clamp; };
 #define SSSSTexture2D Texture2D
 #define SSSSSampleLevelZero(tex, coord) tex.SampleLevel(LinearSampler, coord, 0)
 #define SSSSSampleLevelZeroPoint(tex, coord) tex.SampleLevel(PointSampler, coord, 0)
