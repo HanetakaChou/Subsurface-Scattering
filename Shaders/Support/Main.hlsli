@@ -345,8 +345,11 @@ float4 RenderPS(RenderV2P input,
 					* First we shrink the position inwards the surface to avoid artifacts:
 					* (Note that this can be done once for all the lights)
 					*/
-					// The 0.005 is proportional to the worldUnitPerMeter
-					float4 shrinkedPos = float4(input.worldPosition - 0.005 * input.normal, 1.0);
+					float metersPerUnit = 3.0 * 0.001 * 0.5 / sssWidth;
+					float4 shrinkedPos = float4(input.worldPosition - 0.000625 / metersPerUnit * input.normal, 1.0);
+
+					// Faceworks
+					// g_deepScatterNormalOffset = -0.0007f
 
 					/**
 					 * Now we calculate the thickness from the light point of view:

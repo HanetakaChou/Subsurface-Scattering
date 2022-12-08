@@ -51,27 +51,36 @@ float3 SSSSTransmittance(
 	// Thickness in world units.
 	float dInUnits)
 {
-	float metersPerUnit = 3.0 * 0.001 * 0.5 / sssWidth;
-
-	// The shader code is merely to transform the thickness from world units to mm.
-	// Actually, the default of "translucency" is 0.83 and the result of "8.25 * (1.0 - translucency) * 2.0  * 1000.0 / 3.0" is 0.935 which is really close to 1.
-	float scale = 8.25 * (1.0 - translucency) * 2.0 / 3.0;
-	scale *= (1000.0 * metersPerUnit);
-
-	float d = scale * dInUnits;
-
-	// The transmittance coefficient T(d) is precalculated based on diffusion profile which is approximated by the Gaussians.
-	// It can be precomputed into a texture, for maximum performance
-	float dd = -d * d;
-	float3 T = float3(0.233, 0.455, 0.649) * exp(dd / 0.0064) +
-		float3(0.1, 0.336, 0.344) * exp(dd / 0.0484) +
-		float3(0.118, 0.198, 0.0) * exp(dd / 0.187) +
-		float3(0.113, 0.007, 0.007) * exp(dd / 0.567) +
-		float3(0.358, 0.004, 0.0) * exp(dd / 1.99) +
-		float3(0.078, 0.0, 0.0) * exp(dd / 7.41);
-
 	// Using the transmittance coefficient T(d), we finally approximate the transmitted lighting from the back of the object
 	float NoL = SSSSSaturate(0.3 + dot(-N, L));
 
-	return T * NoL;
+	if (NoL > 0.0)
+	{
+		float metersPerUnit = 3.0 * 0.001 * 0.5 / sssWidth;
+
+		// The shader code is merely to transform the thickness from world units to mm.
+		// Actually, the default of "translucency" is 0.83 and the result of "8.25 * (1.0 - translucency) * 2.0  * 1000.0 / 3.0" is 0.935 which is really close to 1.
+		float scale = 8.25 * (1.0 - translucency) * 2.0 / 3.0;
+		scale *= (1000.0 * metersPerUnit);
+
+		float d = scale * dInUnits;
+
+		// The transmittance coefficient T(d) is precalculated based on diffusion profile which is approximated by the Gaussians.
+		// It can be precomputed into a texture, for maximum performance
+		float dd = -d * d;
+		float3 T = float3(0.233, 0.455, 0.649) * exp(dd / 0.0064) +
+			float3(0.1, 0.336, 0.344) * exp(dd / 0.0484) +
+			float3(0.118, 0.198, 0.0) * exp(dd / 0.187) +
+			float3(0.113, 0.007, 0.007) * exp(dd / 0.567) +
+			float3(0.358, 0.004, 0.0) * exp(dd / 1.99) +
+			float3(0.078, 0.0, 0.0) * exp(dd / 7.41);
+
+
+
+		return T * NoL;
+	}
+	else
+	{
+		return float3(0.0, 0.0, 0.0);
+	}
 }
