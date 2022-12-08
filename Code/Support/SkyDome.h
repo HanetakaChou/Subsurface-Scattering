@@ -23,47 +23,51 @@
  * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
  * POSSIBILITY OF SUCH DAMAGE.
  *
- * The views and conclusions contained in the software and documentation are 
+ * The views and conclusions contained in the software and documentation are
  * those of the authors and should not be interpreted as representing official
  * policies, either expressed or implied, of the copyright holders.
  */
 
-#ifndef SKYDOME_H
-#define SKYDOME_H
+#ifndef _SKYDOME_H_
+#define _SKYDOME_H_ 1
 
-#include <string>
-#include "SDKmisc.h"
-#include "SDKmesh.h"
+#include <sdkddkver.h>
+#define NOMINMAX 1
+#define WIN32_LEAN_AND_MEAN 1
+#include <DXUT.h>
+#include <SDKmisc.h>
+#include <SDKmesh.h>
+#include <DirectXMath.h>
 #include "RenderTarget.h"
+#include <string>
 
 class SkyDome
 {
 public:
-    SkyDome(ID3D10Device *device, const std::wstring &dir, float intensity = 1.0f);
-    ~SkyDome();
+	SkyDome(ID3D11Device* device, const std::wstring& dir, float intensity = 1.0f);
+	~SkyDome();
 
-    void render(const D3DXMATRIX &view, const D3DXMATRIX &projection, float scale);
-    void setDirectory(const std::wstring &dir);
+	void render(ID3D11DeviceContext* context, const DirectX::XMFLOAT4X4& view, const DirectX::XMFLOAT4X4& projection, float scale);
 
-    void setIntensity(float intensity) { this->intensity = intensity; }
-    float getIntensity() const { return intensity; }
+	void setIntensity(float var_intensity) { this->intensity = var_intensity; }
+	float getIntensity() const { return intensity; }
 
-    void setAngle(const D3DXVECTOR2 &angle) { this->angle = angle; }
-    D3DXVECTOR2 getAngle() const { return angle; }
+	void setAngle(const DirectX::XMFLOAT2& var_angle) { this->angle = var_angle; }
+	DirectX::XMFLOAT2 getAngle() const { return angle; }
 
 private:
-    void createMesh(const std::wstring &dir);
-    static void CALLBACK createTextureFromFile(ID3D10Device *device,
-                                               char *filename,
-                                               ID3D10ShaderResourceView **shaderResourceView,
-                                               void *context,
-                                               bool srgb);
+	void createMesh(ID3D11Device* device, const std::wstring& dir);
 
-    ID3D10Device *device;
-    ID3D10Effect *effect;
-    CDXUTSDKMesh mesh;
-    float intensity;
-    D3DXVECTOR2 angle;
+	ID3D11VertexShader* SkyDomeVS;
+	ID3D11PixelShader* SkyDomePS;
+	ID3D11Buffer* CbufUpdatedPerFrame;
+	ID3D11DepthStencilState* EnableDepthDisableStencil;
+	ID3D11BlendState* NoBlending;
+	ID3D11SamplerState* LinearSampler;
+
+	CDXUTSDKMesh mesh;
+	float intensity;
+	DirectX::XMFLOAT2 angle;
 };
 
 #endif

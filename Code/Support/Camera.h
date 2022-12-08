@@ -23,86 +23,94 @@
  * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
  * POSSIBILITY OF SUCH DAMAGE.
  *
- * The views and conclusions contained in the software and documentation are 
+ * The views and conclusions contained in the software and documentation are
  * those of the authors and should not be interpreted as representing official
  * policies, either expressed or implied, of the copyright holders.
  */
 
-#ifndef CAMERA_H
-#define CAMERA_H
+#ifndef _CAMERA_H_
+#define _CAMERA_H_ 1
 
+#include <sdkddkver.h>
+#define NOMINMAX 1
+#define WIN32_LEAN_AND_MEAN 1
+#include <Windows.h>
+#include <DirectXMath.h>
 #include <iostream>
-#include <dxgi.h>
-#include <d3d10.h>
-#include <d3dx10.h>
-#include <dxerr.h>
 
 class Camera
 {
 public:
-    Camera() : distance(0.0f),
-               distanceVelocity(0.0f),
-               angle(0.0f, 0.0f),
-               angularVelocity(0.0f, 0.0f),
-               panPosition(0.0f, 0.0f),
-               panVelocity(0.0f, 0.0f),
-               viewportSize(1.0f, 1.0f),
-               mousePos(0.0f, 0.0f),
-               attenuation(0.0f),
-               draggingLeft(false),
-               draggingMiddle(false),
-               draggingRight(false) { build(); }
+	Camera() : distance(0.0f),
+		distanceVelocity(0.0f),
+		angle(0.0f, 0.0f),
+		angularVelocity(0.0f, 0.0f),
+		panPosition(0.0f, 0.0f),
+		panVelocity(0.0f, 0.0f),
+		viewportSize(1.0f, 1.0f),
+		mousePos(0.0f, 0.0f),
+		attenuation(0.0f),
+		draggingLeft(false),
+		draggingMiddle(false),
+		draggingRight(false) {
+		build();
+	}
 
-    LRESULT handleMessages(HWND hwnd, UINT msg, WPARAM wparam, LPARAM lparam);
+	LRESULT handleMessages(HWND hwnd, UINT msg, WPARAM wparam, LPARAM lparam);
 
-    void frameMove(FLOAT elapsedTime);
+	void frameMove(FLOAT elapsedTime);
 
-    void setDistance(float distance) { this->distance = distance; }
-    float getDistance() const { return distance; }
+	void setDistance(float var_distance) { this->distance = var_distance; }
+	float getDistance() const { return distance; }
 
-    void setDistanceVelocity(float distanceVelocity) { this->distanceVelocity = distanceVelocity; }
-    float getDistanceVelocity() const { return distanceVelocity; }
+	void setDistanceVelocity(float var_distanceVelocity) { this->distanceVelocity = var_distanceVelocity; }
+	float getDistanceVelocity() const { return distanceVelocity; }
 
-    void setPanPosition(const D3DXVECTOR2 &panPosition) { this->panPosition = panPosition; }
-    const D3DXVECTOR2 &getPanPosition() const { return panPosition; }
+	void setPanPosition(const DirectX::XMFLOAT2& var_panPosition) { this->panPosition = var_panPosition; }
+	const DirectX::XMFLOAT2& getPanPosition() const { return panPosition; }
 
-    void setPanVelocity(const D3DXVECTOR2 &panVelocity) { this->panVelocity = panVelocity; }
-    const D3DXVECTOR2 &getPanVelocity() const { return panVelocity; }
+	void setPanVelocity(const DirectX::XMFLOAT2& var_panVelocity) { this->panVelocity = var_panVelocity; }
+	const DirectX::XMFLOAT2& getPanVelocity() const { return panVelocity; }
 
-    void setAngle(const D3DXVECTOR2 &angle) { this->angle = angle; }
-    const D3DXVECTOR2 &getAngle() const { return angle; }
+	void setAngle(const DirectX::XMFLOAT2& var_angle) { this->angle = var_angle; }
+	const DirectX::XMFLOAT2& getAngle() const { return angle; }
 
-    void setAngularVelocity(const D3DXVECTOR2 &angularVelocity) { this->angularVelocity = angularVelocity; }
-    const D3DXVECTOR2 &getAngularVelocity() const { return angularVelocity; }
+	void setAngularVelocity(const DirectX::XMFLOAT2& var_angularVelocity) { this->angularVelocity = var_angularVelocity; }
+	const DirectX::XMFLOAT2& getAngularVelocity() const { return angularVelocity; }
 
-    void setProjection(float fov, float aspect, float nearPlane, float farPlane);
-    void setViewportSize(const D3DXVECTOR2 &viewportSize) { this->viewportSize = viewportSize; }
+	void setProjection(float fov, float aspect, float nearPlane, float farPlane);
+	void setViewportSize(const DirectX::XMFLOAT2& var_viewportSize) { this->viewportSize = var_viewportSize; }
 
-    const D3DXMATRIX &getViewMatrix() { return view; }
-    const D3DXMATRIX &getProjectionMatrix() const { return projection; }
+	const DirectX::XMFLOAT4X4& getViewMatrix() { return view; }
+	const DirectX::XMFLOAT4X4& getProjectionMatrix() const { return projection; }
 
-    const D3DXVECTOR3 &getLookAtPosition() { return lookAtPosition; }
-    const D3DXVECTOR3 &getEyePosition() { return eyePosition; }
+	const DirectX::XMFLOAT3& getLookAtPosition() { return lookAtPosition; }
+	const DirectX::XMFLOAT3& getEyePosition() { return eyePosition; }
 
-    friend std::ostream &operator<<(std::ostream &os, const Camera &camera);
-    friend std::istream &operator>>(std::istream &is, Camera &camera);
+	friend std::ostream& operator<<(std::ostream& os, const Camera& camera);
+	friend std::istream& operator>>(std::istream& is, Camera& camera);
 
 private:
-    void build();
-    void updatePosition(D3DXVECTOR2 delta);
+	void build();
+	void updatePosition(DirectX::XMFLOAT2 delta);
 
-    float distance, distanceVelocity;
-    D3DXVECTOR2 panPosition, panVelocity;
-    D3DXVECTOR2 angle, angularVelocity;
-    D3DXVECTOR2 viewportSize;
+	float distance;
+	float distanceVelocity;
+	DirectX::XMFLOAT2 panPosition;
+	DirectX::XMFLOAT2 panVelocity;
+	DirectX::XMFLOAT2 angle;
+	DirectX::XMFLOAT2 angularVelocity;
+	DirectX::XMFLOAT2 viewportSize;
 
-    D3DXMATRIX view, projection;
-    D3DXVECTOR3 lookAtPosition;
-    D3DXVECTOR3 eyePosition;
+	DirectX::XMFLOAT4X4 view, projection;
+	DirectX::XMFLOAT3 lookAtPosition;
+	DirectX::XMFLOAT3 eyePosition;
 
-    D3DXVECTOR2 mousePos;
-    float attenuation;
-    bool draggingLeft, draggingMiddle, draggingRight;
+	DirectX::XMFLOAT2 mousePos;
+	float attenuation;
+	bool draggingLeft;
+	bool draggingMiddle;
+	bool draggingRight;
 };
 
 #endif

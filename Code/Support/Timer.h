@@ -23,87 +23,74 @@
  * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
  * POSSIBILITY OF SUCH DAMAGE.
  *
- * The views and conclusions contained in the software and documentation are 
+ * The views and conclusions contained in the software and documentation are
  * those of the authors and should not be interpreted as representing official
  * policies, either expressed or implied, of the copyright holders.
  */
 
-#ifndef TIMER_H
-#define TIMER_H
+#ifndef _TIMER_H_
+#define _TIMER_H_ 1
+
+#include <DXUT.h>
 
 #include <iostream>
 #include <string>
 #include <map>
 #include <vector>
 
-#ifdef TIMER_DIRECTX_9
-#include <d3d9.h>
-#else
-#include <d3d10.h>
-#endif
-#include <dxerr.h>
-
 class Timer
 {
 public:
-#ifdef TIMER_DIRECTX_9
-    Timer(IDirect3DDevice9 *device);
-#else
-    Timer(ID3D10Device *device);
-#endif
-    ~Timer();
+	Timer(ID3D11Device* device, ID3D11DeviceContext* context);
+	~Timer();
 
-    void reset() { sections.clear(); }
-    void start();
-    float clock(const std::wstring &msg = L"");
-    float accumulated() const { return accum; }
+	void reset() { sections.clear(); }
+	void start(ID3D11DeviceContext* context);
+	float clock(ID3D11DeviceContext* context, const std::wstring& msg = L"");
+	float accumulated() const { return accum; }
 
-    void sleep(float ms);
+	void sleep(ID3D11DeviceContext* context, float ms);
 
-    void setEnabled(bool enabled) { this->enabled = enabled; }
-    bool isEnabled() const { return enabled; }
+	void setEnabled(bool var_enabled) { this->enabled = var_enabled; }
+	bool isEnabled() const { return enabled; }
 
-    void setFlushEnabled(bool flushEnabled) { this->flushEnabled = flushEnabled; }
-    bool isFlushEnabled() const { return flushEnabled; }
+	void setFlushEnabled(bool var_flushEnabled) { this->flushEnabled = var_flushEnabled; }
+	bool isFlushEnabled() const { return flushEnabled; }
 
-    void setWindowSize(int windowSize) { this->windowSize = windowSize; }
-    int getWindowSize() const { return windowSize; }
+	void setWindowSize(int var_windowSize) { this->windowSize = var_windowSize; }
+	int getWindowSize() const { return windowSize; }
 
-    void setRepetitionsCount(int repetitionCount) { this->repetitionCount = repetitionCount; }
-    int getRepetitionsCount() const { return repetitionCount; }
+	void setRepetitionsCount(int var_repetitionCount) { this->repetitionCount = var_repetitionCount; }
+	int getRepetitionsCount() const { return repetitionCount; }
 
-    float getSection(const std::wstring &name) { return 1000.0f * sections[name].mean / repetitionCount; }
+	float getSection(const std::wstring& name) { return 1000.0f * sections[name].mean / repetitionCount; }
 
-    friend std::wostream &operator<<(std::wostream &out, const Timer &timer);
+	friend std::wostream& operator<<(std::wostream& out, const Timer& timer);
 
 private:
-    float mean(const std::wstring &msg, float t);
-    void flush();
+	float mean(const std::wstring& msg, float t);
+	void flush(ID3D11DeviceContext* context);
 
-#ifdef TIMER_DIRECTX_9
-    IDirect3DQuery9 *event;
-#else
-    ID3D10Query *event;
-#endif
+	ID3D11Query* event;
 
-    __int64 t0;
-    float accum;
+	__int64 t0;
+	float accum;
 
-    bool enabled;
-    bool flushEnabled;
-    int windowSize;
-    int repetitionCount;
+	bool enabled;
+	bool flushEnabled;
+	int windowSize;
+	int repetitionCount;
 
-    class Section
-    {
-    public:
-        Section() : mean(0.0), pos(0), completed(0.0f) {}
-        std::vector<std::pair<float, bool>> buffer;
-        float mean;
-        int pos;
-        float completed;
-    };
-    std::map<std::wstring, Section> sections;
+	class Section
+	{
+	public:
+		Section() : mean(0.0), pos(0), completed(0.0f) {}
+		std::vector<std::pair<float, bool>> buffer;
+		float mean;
+		int pos;
+		float completed;
+	};
+	std::map<std::wstring, Section> sections;
 };
 
 #endif

@@ -23,44 +23,37 @@
  * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
  * POSSIBILITY OF SUCH DAMAGE.
  *
- * The views and conclusions contained in the software and documentation are 
+ * The views and conclusions contained in the software and documentation are
  * those of the authors and should not be interpreted as representing official
  * policies, either expressed or implied, of the copyright holders.
  */
 
-#ifndef FILMGRAIN_H
-#define FILMGRAIN_H
+#ifndef _FILMGRAIN_H_
+#define _FILMGRAIN_H_ 1
 
+#include <sdkddkver.h>
+#define NOMINMAX 1
+#define WIN32_LEAN_AND_MEAN 1
+#include <DXUT.h>
 #include "RenderTarget.h"
-#include <dxgi.h>
-#include <d3d10.h>
-#include <d3dx10.h>
-#include <dxerr.h>
 
 class FilmGrain
 {
 public:
-    FilmGrain(ID3D10Device *device, int width, int height, float noiseIntensity = 1.0f, float exposure = 1.0f);
-    ~FilmGrain();
+	FilmGrain(ID3D11Device* device, int width, int height);
+	~FilmGrain();
 
-    void setNoiseIntensity(float noiseIntensity) { this->noiseIntensity = noiseIntensity; }
-    float getNoiseIntensity() const { return noiseIntensity; }
-
-    void setExposure(float exposure) { this->exposure = exposure; }
-    float getExposure() const { return exposure; }
-
-    void go(ID3D10ShaderResourceView *src, ID3D10RenderTargetView *dst, float t);
+	void go(ID3D11DeviceContext* context, ID3D11ShaderResourceView* src, ID3D11RenderTargetView* dst);
 
 private:
-    ID3D10Device *device;
-    int width, height;
+	int width, height;
 
-    float noiseIntensity;
-    float exposure;
-
-    ID3D10Effect *effect;
-    Quad *quad;
-    ID3D10ShaderResourceView *noiseSRV;
+	ID3D11VertexShader* PassVS;
+	ID3D11PixelShader* FilmGrainPS;
+	ID3D11DepthStencilState* DisableDepthStencil;
+	ID3D11BlendState* NoBlending;
+	ID3D11SamplerState* LinearSampler;
+	Quad* quad;
 };
 
 #endif

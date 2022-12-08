@@ -23,41 +23,50 @@
  * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
  * POSSIBILITY OF SUCH DAMAGE.
  *
- * The views and conclusions contained in the software and documentation are 
+ * The views and conclusions contained in the software and documentation are
  * those of the authors and should not be interpreted as representing official
  * policies, either expressed or implied, of the copyright holders.
  */
 
-#ifndef SHADOWMAP_H
-#define SHADOWMAP_H
 
+#ifndef _SHADOWMAP_H_
+#define _SHADOWMAP_H_ 1
+
+#include <sdkddkver.h>
+#define NOMINMAX 1
+#define WIN32_LEAN_AND_MEAN 1
+#include <DXUT.h>
 #include "RenderTarget.h"
+#include <DirectXMath.h>
 
-class ShadowMap
-{
+class ShadowMap {
 public:
-    static void init(ID3D10Device *device);
-    static void release();
+	static void init(ID3D11Device* device);
+	static void release();
 
-    ShadowMap(ID3D10Device *device, int width, int height);
-    ~ShadowMap();
+	ShadowMap(ID3D11Device* device, int width, int height);
+	~ShadowMap();
 
-    void begin(const D3DXMATRIX &view, const D3DXMATRIX &projection);
-    void setWorldMatrix(const D3DXMATRIX &world);
-    void end();
+	void begin(ID3D11DeviceContext* context, const DirectX::XMFLOAT4X4& view, const DirectX::XMFLOAT4X4& projection);
+	void setWorldMatrix(ID3D11DeviceContext* context, const DirectX::XMFLOAT4X4& world);
+	void end(ID3D11DeviceContext* context);
 
-    ID3D10EffectTechnique *getTechnique() const { return effect->GetTechniqueByName("ShadowMap"); }
-    operator ID3D10ShaderResourceView * const() { return *depthStencil; }
+	operator ID3D11ShaderResourceView* const () { return *depthStencil; }
 
-    static D3DXMATRIX getViewProjectionTextureMatrix(const D3DXMATRIX &view, const D3DXMATRIX &projection);
+	static DirectX::XMFLOAT4X4 getViewProjectionTextureMatrix(const DirectX::XMFLOAT4X4& view, const DirectX::XMFLOAT4X4& projection);
 
 private:
-    ID3D10Device *device;
-    DepthStencil *depthStencil;
-    D3D10_VIEWPORT viewport;
+	DepthStencil* depthStencil;
+	D3D11_VIEWPORT viewport;
 
-    static ID3D10Effect *effect;
-    static ID3D10InputLayout *vertexLayout;
+	static ID3D11VertexShader* ShadowMapVS;
+	static ID3D11Buffer* CbufUpdatedPerFrame;
+	static ID3D11Buffer* CbufUpdatedPerObject;
+	static ID3D11DepthStencilState* EnableDepthDisableStencil;
+	static ID3D11BlendState* NoBlending;
+	static ID3D11InputLayout* vertexLayout;
 };
+
+void shadowPass(ID3D11DeviceContext* context);
 
 #endif

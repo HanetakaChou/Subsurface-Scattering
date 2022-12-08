@@ -29,30 +29,14 @@
  */
 
 
-cbuffer UpdatedOncePerFrame {
-	float2 pixelSize;
-	float noiseIntensity;
-	float exposure;
-	float t;
-}
+Texture2D srcTex : register(t0);
 
-Texture2D srcTex;
-Texture3D noiseTex;
-
-
-SamplerState LinearSampler {
+SamplerState LinearSampler : register(s0)
+{
 	Filter = MIN_MAG_MIP_LINEAR;
 	AddressU = Clamp;
 	AddressV = Clamp;
 };
-
-SamplerState LinearSamplerWrap {
-	Filter = MIN_MAG_MIP_LINEAR;
-	AddressU = Wrap;
-	AddressV = Wrap;
-	AddressW = Wrap;
-};
-
 
 void PassVS(float4 position : POSITION,
 	out float4 svposition : SV_POSITION,
@@ -60,49 +44,8 @@ void PassVS(float4 position : POSITION,
 	svposition = position;
 }
 
-
-float3 Overlay(float3 a, float3 b) {
-	return pow(abs(b), 2.2) < 0.5 ? 2 * a * b : 1.0 - 2 * (1.0 - a) * (1.0 - b);
-}
-
-
-float3 AddNoise(float3 color, float2 texcoord) {
-	float2 coord = texcoord * 2.0;
-	coord.x *= pixelSize.y / pixelSize.x;
-	float noise = noiseTex.Sample(LinearSamplerWrap, float3(coord, t)).r;
-	float exposureFactor = exposure / 2.0;
-	exposureFactor = sqrt(exposureFactor);
-	float t = lerp(3.5 * noiseIntensity, 1.13 * noiseIntensity, exposureFactor);
-	return Overlay(color, lerp(0.5, noise, t));
-}
-
-
 float4 FilmGrainPS(float4 position : SV_POSITION,
 	float2 texcoord : TEXCOORD0) : SV_TARGET{
 float3 color = srcTex.Sample(LinearSampler, texcoord).rgb;
-color = AddNoise(color, texcoord);
 return float4(color, 1.0);
-}
-
-
-DepthStencilState DisableDepthStencil {
-	DepthEnable = FALSE;
-	StencilEnable = FALSE;
-};
-
-BlendState NoBlending {
-	AlphaToCoverageEnable = FALSE;
-	BlendEnable[0] = FALSE;
-};
-
-
-technique10 FilmGrain {
-	pass FilmGrain {
-		SetVertexShader(CompileShader(vs_4_0, PassVS()));
-		SetGeometryShader(NULL);
-		SetPixelShader(CompileShader(ps_4_0, FilmGrainPS()));
-
-		SetDepthStencilState(DisableDepthStencil, 0);
-		SetBlendState(NoBlending, float4(0.0f, 0.0f, 0.0f, 0.0f), 0xFFFFFFFF);
-	}
 }

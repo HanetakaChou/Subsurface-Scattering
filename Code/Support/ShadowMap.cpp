@@ -23,97 +23,202 @@
  * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
  * POSSIBILITY OF SUCH DAMAGE.
  *
- * The views and conclusions contained in the software and documentation are 
+ * The views and conclusions contained in the software and documentation are
  * those of the authors and should not be interpreted as representing official
  * policies, either expressed or implied, of the copyright holders.
  */
 
-#include "DXUT.h"
+
 #include "ShadowMap.h"
+#include "../Demo.h"
 
-ID3D10Effect *ShadowMap::effect;
-ID3D10InputLayout *ShadowMap::vertexLayout;
+#include "../../dxbc/ShadowMap_ShadowMapVS_bytecode.inl"
 
-void ShadowMap::init(ID3D10Device *device)
+ID3D11VertexShader* ShadowMap::ShadowMapVS = NULL;
+ID3D11Buffer* ShadowMap::CbufUpdatedPerFrame = NULL;
+ID3D11Buffer* ShadowMap::CbufUpdatedPerObject = NULL;
+ID3D11DepthStencilState* ShadowMap::EnableDepthDisableStencil = NULL;
+ID3D11BlendState* ShadowMap::NoBlending = NULL;
+ID3D11InputLayout* ShadowMap::vertexLayout = NULL;
+
+#define CB_UPDATEDPERFRAME		0
+#define CB_UPDATEDPEROBJECT		1
+
+struct UpdatedPerFrame
 {
-    HRESULT hr;
-    if (effect == NULL)
-        V(D3DX10CreateEffectFromResource(GetModuleHandle(NULL), L"ShadowMap.fx", NULL, NULL, NULL, "fx_4_0", D3D10_SHADER_ENABLE_STRICTNESS, 0, device, NULL, NULL, &effect, NULL, NULL));
+	__declspec(align(16)) DirectX::XMFLOAT4X4 view;
+	__declspec(align(16)) DirectX::XMFLOAT4X4 projection;
+};
 
-    const D3D10_INPUT_ELEMENT_DESC layout[] = {
-        {"POSITION", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, D3D10_APPEND_ALIGNED_ELEMENT, D3D10_INPUT_PER_VERTEX_DATA, 0}};
-    UINT numElements = sizeof(layout) / sizeof(D3D10_INPUT_ELEMENT_DESC);
+struct UpdatedPerObject
+{
+	__declspec(align(16)) DirectX::XMFLOAT4X4 world;
+};
 
-    D3D10_PASS_DESC desc;
-    V(effect->GetTechniqueByName("ShadowMap")->GetPassByIndex(0)->GetDesc(&desc));
-    V(device->CreateInputLayout(layout, numElements, desc.pIAInputSignature, desc.IAInputSignatureSize, &vertexLayout));
+
+void ShadowMap::init(ID3D11Device* device) {
+	HRESULT hr;
+
+	D3D11_BUFFER_DESC UpdatedPerFrameDesc =
+	{
+	   sizeof(struct UpdatedPerFrame),
+		D3D11_USAGE_DYNAMIC,
+		D3D11_BIND_CONSTANT_BUFFER,
+		D3D11_CPU_ACCESS_WRITE,
+	};
+	V(device->CreateBuffer(&UpdatedPerFrameDesc, NULL, &CbufUpdatedPerFrame));
+
+	D3D11_BUFFER_DESC UpdatedPerObjectDesc =
+	{
+	   sizeof(struct UpdatedPerObject),
+		D3D11_USAGE_DYNAMIC,
+		D3D11_BIND_CONSTANT_BUFFER,
+		D3D11_CPU_ACCESS_WRITE,
+	};
+	V(device->CreateBuffer(&UpdatedPerObjectDesc, NULL, &CbufUpdatedPerObject));
+
+	V(device->CreateVertexShader(ShadowMap_ShadowMapVS_bytecode, sizeof(ShadowMap_ShadowMapVS_bytecode), NULL, &ShadowMapVS));
+
+	D3D11_DEPTH_STENCIL_DESC EnableDepthDisableStencilDesc = { };
+	EnableDepthDisableStencilDesc.DepthEnable = TRUE;
+	EnableDepthDisableStencilDesc.DepthWriteMask = D3D11_DEPTH_WRITE_MASK_ALL;
+	EnableDepthDisableStencilDesc.DepthFunc = D3D11_COMPARISON_LESS;
+	EnableDepthDisableStencilDesc.StencilEnable = FALSE;
+	EnableDepthDisableStencilDesc.StencilReadMask = D3D11_DEFAULT_STENCIL_READ_MASK;
+	EnableDepthDisableStencilDesc.StencilWriteMask = D3D11_DEFAULT_STENCIL_WRITE_MASK;
+	EnableDepthDisableStencilDesc.FrontFace.StencilFunc = D3D11_COMPARISON_ALWAYS;
+	EnableDepthDisableStencilDesc.BackFace.StencilFunc = D3D11_COMPARISON_ALWAYS;
+	EnableDepthDisableStencilDesc.FrontFace.StencilDepthFailOp = D3D11_STENCIL_OP_KEEP;
+	EnableDepthDisableStencilDesc.BackFace.StencilDepthFailOp = D3D11_STENCIL_OP_KEEP;
+	EnableDepthDisableStencilDesc.FrontFace.StencilPassOp = D3D11_STENCIL_OP_KEEP;
+	EnableDepthDisableStencilDesc.BackFace.StencilPassOp = D3D11_STENCIL_OP_KEEP;
+	EnableDepthDisableStencilDesc.FrontFace.StencilFailOp = D3D11_STENCIL_OP_KEEP;
+	EnableDepthDisableStencilDesc.BackFace.StencilFailOp = D3D11_STENCIL_OP_KEEP;
+	EnableDepthDisableStencilDesc.DepthEnable = TRUE;
+	EnableDepthDisableStencilDesc.DepthWriteMask = D3D11_DEPTH_WRITE_MASK_ALL;
+	EnableDepthDisableStencilDesc.DepthFunc = D3D11_COMPARISON_LESS_EQUAL;
+	EnableDepthDisableStencilDesc.StencilEnable = FALSE;
+	V(device->CreateDepthStencilState(&EnableDepthDisableStencilDesc, &EnableDepthDisableStencil));
+
+	D3D11_BLEND_DESC NoBlendingDesc = {};
+	NoBlendingDesc.AlphaToCoverageEnable = FALSE;
+	NoBlendingDesc.IndependentBlendEnable = FALSE;
+	NoBlendingDesc.RenderTarget[0].BlendEnable = FALSE;
+	NoBlendingDesc.RenderTarget[0].SrcBlend = D3D11_BLEND_ONE;
+	NoBlendingDesc.RenderTarget[0].DestBlend = D3D11_BLEND_ZERO;
+	NoBlendingDesc.RenderTarget[0].BlendOp = D3D11_BLEND_OP_ADD;
+	NoBlendingDesc.RenderTarget[0].SrcBlendAlpha = D3D11_BLEND_ONE;
+	NoBlendingDesc.RenderTarget[0].DestBlendAlpha = D3D11_BLEND_ZERO;
+	NoBlendingDesc.RenderTarget[0].BlendOpAlpha = D3D11_BLEND_OP_ADD;
+	NoBlendingDesc.RenderTarget[0].RenderTargetWriteMask = D3D11_COLOR_WRITE_ENABLE_ALL;
+	NoBlendingDesc.AlphaToCoverageEnable = FALSE;
+	NoBlendingDesc.RenderTarget[0].BlendEnable = FALSE;
+	V(device->CreateBlendState(&NoBlendingDesc, &NoBlending));
+
+	const D3D11_INPUT_ELEMENT_DESC layout[] = {
+		{ "POSITION",  0, DXGI_FORMAT_R32G32B32_FLOAT, 0, D3D11_APPEND_ALIGNED_ELEMENT, D3D11_INPUT_PER_VERTEX_DATA, 0 }
+	};
+	UINT numElements = sizeof(layout) / sizeof(D3D11_INPUT_ELEMENT_DESC);
+
+	V(device->CreateInputLayout(layout, numElements, ShadowMap_ShadowMapVS_bytecode, sizeof(ShadowMap_ShadowMapVS_bytecode), &vertexLayout));
 }
 
-void ShadowMap::release()
-{
-    SAFE_RELEASE(effect);
-    SAFE_RELEASE(vertexLayout);
+
+void ShadowMap::release() {
+	SAFE_RELEASE(vertexLayout);
+	SAFE_RELEASE(NoBlending);
+	SAFE_RELEASE(EnableDepthDisableStencil);
+	SAFE_RELEASE(CbufUpdatedPerObject);
+	SAFE_RELEASE(CbufUpdatedPerFrame);
+	SAFE_RELEASE(ShadowMapVS);
 }
 
-ShadowMap::ShadowMap(ID3D10Device *device, int width, int height)
-    : device(device)
+
+ShadowMap::ShadowMap(ID3D11Device* device, int width, int height)
 {
-    depthStencil = new DepthStencil(device, width, height);
+	depthStencil = new DepthStencil(device, width, height);
 }
 
-ShadowMap::~ShadowMap()
-{
-    SAFE_DELETE(depthStencil);
+
+ShadowMap::~ShadowMap() {
+	SAFE_DELETE(depthStencil);
 }
 
-void ShadowMap::begin(const D3DXMATRIX &view, const D3DXMATRIX &projection)
+
+void ShadowMap::begin(ID3D11DeviceContext* context, const DirectX::XMFLOAT4X4& view, const DirectX::XMFLOAT4X4& projection)
 {
-    HRESULT hr;
+	context->IASetInputLayout(vertexLayout);
 
-    device->IASetInputLayout(vertexLayout);
+	context->ClearDepthStencilView(*depthStencil, D3D11_CLEAR_DEPTH, 1.0, 0);
 
-    device->ClearDepthStencilView(*depthStencil, D3D10_CLEAR_DEPTH, 1.0, 0);
+	D3D11_MAPPED_SUBRESOURCE mappedResource;
+	context->Map(CbufUpdatedPerFrame, 0, D3D11_MAP_WRITE_DISCARD, 0, &mappedResource);
+	((struct UpdatedPerFrame*)mappedResource.pData)->view = view;
+	((struct UpdatedPerFrame*)mappedResource.pData)->projection = projection;
+	context->Unmap(CbufUpdatedPerFrame, 0);
 
-    /**
-     * This is for rendering linear values:
-     * Check this: http://www.mvps.org/directx/articles/linear_z/linearz.htm
-     */
-    D3DXMATRIX linearProjection = projection;
-    float Q = projection._33;
-    float N = -projection._43 / projection._33;
-    float F = -N * Q / (1 - Q);
-    linearProjection._33 /= F;
-    linearProjection._43 /= F;
+	ID3D11RenderTargetView* pRenderTargetViews[1] = { NULL };
+	context->OMSetRenderTargets(1, pRenderTargetViews, *depthStencil);
 
-    V(effect->GetVariableByName("view")->AsMatrix()->SetMatrix((float *)&view));
-    V(effect->GetVariableByName("projection")->AsMatrix()->SetMatrix((float *)&linearProjection));
+	UINT numViewports = 1;
+	context->RSGetViewports(&numViewports, &viewport);
+	depthStencil->setViewport(context);
 
-    device->OMSetRenderTargets(0, NULL, *depthStencil);
-
-    UINT numViewports = 1;
-    device->RSGetViewports(&numViewports, &viewport);
-    depthStencil->setViewport();
+	context->VSSetConstantBuffers(CB_UPDATEDPERFRAME, 1U, &CbufUpdatedPerFrame);
+	context->VSSetConstantBuffers(CB_UPDATEDPEROBJECT, 1U, &CbufUpdatedPerObject);
+	context->VSSetShader(ShadowMapVS, NULL, 0);
+	context->GSSetShader(NULL, NULL, 0);
+	context->PSSetShader(NULL, NULL, 0);
+	context->OMSetDepthStencilState(EnableDepthDisableStencil, 0);
+	FLOAT BlendFactor[4] = { 0.0f, 0.0f, 0.0f, 0.0f };
+	context->OMSetBlendState(NoBlending, BlendFactor, 0xFFFFFFFF);
 }
 
-void ShadowMap::setWorldMatrix(const D3DXMATRIX &world)
-{
-    HRESULT hr;
-    V(effect->GetVariableByName("world")->AsMatrix()->SetMatrix((float *)&world));
+
+void ShadowMap::setWorldMatrix(ID3D11DeviceContext* context, const DirectX::XMFLOAT4X4& world) {
+	D3D11_MAPPED_SUBRESOURCE mappedResource;
+	context->Map(CbufUpdatedPerObject, 0, D3D11_MAP_WRITE_DISCARD, 0, &mappedResource);
+	((struct UpdatedPerObject*)mappedResource.pData)->world = world;
+	context->Unmap(CbufUpdatedPerObject, 0);
 }
 
-void ShadowMap::end()
-{
-    device->RSSetViewports(1, &viewport);
-    device->OMSetRenderTargets(0, NULL, NULL);
+void ShadowMap::end(ID3D11DeviceContext* context) {
+	context->RSSetViewports(1, &viewport);
+
+	ID3D11RenderTargetView* pRenderTargetViews[1] = { NULL };
+	context->OMSetRenderTargets(1, pRenderTargetViews, NULL);
 }
 
-D3DXMATRIX ShadowMap::getViewProjectionTextureMatrix(const D3DXMATRIX &view, const D3DXMATRIX &projection)
+
+DirectX::XMFLOAT4X4 ShadowMap::getViewProjectionTextureMatrix(const DirectX::XMFLOAT4X4& view, const DirectX::XMFLOAT4X4& projection) {
+	
+	DirectX::XMMATRIX scale = DirectX::XMMatrixScaling(0.5f, -0.5f, 1.0f);
+
+	DirectX::XMMATRIX translation = DirectX::XMMatrixTranslation(0.5f, 0.5f, 0.0f);
+
+	DirectX::XMFLOAT4X4 viewProjectionTexture;
+	DirectX::XMStoreFloat4x4(&viewProjectionTexture, DirectX::XMMatrixMultiply(DirectX::XMMatrixMultiply(DirectX::XMMatrixMultiply(DirectX::XMLoadFloat4x4(&view), DirectX::XMLoadFloat4x4(&projection)), scale), translation));
+	return viewProjectionTexture;
+}
+
+
+void shadowPass(ID3D11DeviceContext* context)
 {
-    D3DXMATRIX scale;
-    D3DXMatrixScaling(&scale, 0.5f, -0.5f, 1.0f);
+	for (int i = 0; i < N_LIGHTS; i++)
+	{
+		if (DirectX::XMVectorGetX(DirectX::XMVector3Length(DirectX::XMLoadFloat3(&lights[i].color))) > 0.0f)
+		{
+			lights[i].shadowMap->begin(context, lights[i].camera.getViewMatrix(), lights[i].camera.getProjectionMatrix());
+			for (int j = 0; j < N_HEADS; j++)
+			{
+				DirectX::XMFLOAT4X4 world;
+				DirectX::XMStoreFloat4x4(&world, DirectX::XMMatrixTranslation(j - (N_HEADS - 1) / 2.0f, 0.0f, 0.0f));
 
-    D3DXMATRIX translation;
-    D3DXMatrixTranslation(&translation, 0.5f, 0.5f, 0.0f);
+				lights[i].shadowMap->setWorldMatrix(context, world);
 
-    return view * projection * scale * translation;
+				mesh.Render(context, 0U, 0U, 0U);
+			}
+			lights[i].shadowMap->end(context);
+		}
+	}
 }

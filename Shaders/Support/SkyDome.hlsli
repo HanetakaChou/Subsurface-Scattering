@@ -29,27 +29,27 @@
  */
 
 
-cbuffer UpdatedPerFrame {
-	matrix view;
-	matrix projection;
-	matrix world;
+cbuffer UpdatedPerFrame : register(b0)
+{
+	row_major float4x4 view;
+	row_major float4x4 projection;
+	row_major float4x4 world;
 	float intensity;
 }
 
-TextureCube skyTex;
+TextureCube skyTex : register(t0);
 
-
-SamplerState LinearSampler {
+SamplerState LinearSampler : register(s0)
+{
 	Filter = MIN_MAG_MIP_LINEAR;
 	AddressU = Clamp;
 	AddressV = Clamp;
 };
 
-
 void SkyDomeVS(float4 position : POSITION,
 	out float4 svposition : SV_POSITION,
-	out float3 texcoord : TEXCOORD0,
-	uniform float4x4 worldViewProjection) {
+	out float3 texcoord : TEXCOORD0) {
+	float4x4 worldViewProjection = mul(mul(world, view), projection);
 	svposition = mul(position, worldViewProjection);
 	texcoord = position.xyz;
 }
@@ -73,9 +73,9 @@ BlendState NoBlending {
 
 technique10 RenderSkyDome {
 	pass RenderSkyDome {
-		SetVertexShader(CompileShader(vs_4_0, SkyDomeVS(mul(mul(world, view), projection))));
-		SetGeometryShader(NULL);
-		SetPixelShader(CompileShader(ps_4_0, SkyDomePS()));
+		//SetVertexShader(CompileShader(vs_4_0, SkyDomeVS(mul(mul(world, view), projection))));
+		//SetGeometryShader(NULL);
+		//SetPixelShader(CompileShader(ps_4_0, SkyDomePS()));
 
 		SetDepthStencilState(EnableDepthDisableStencil, 0);
 		SetBlendState(NoBlending, float4(0.0f, 0.0f, 0.0f, 0.0f), 0xFFFFFFFF);

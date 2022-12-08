@@ -28,41 +28,20 @@
  * policies, either expressed or implied, of the copyright holders.
  */
 
-
-uniform float4x4 world;
-uniform float4x4 view;
-uniform float4x4 projection;
-
-
-float4 ShadowMapVS(float4 position : POSITION0,
-	uniform float4x4 worldViewProjection) : SV_POSITION{
-float4 pos = mul(position, worldViewProjection);
-pos.z *= pos.w; // We want linear positions
-return pos;
+cbuffer UpdatedPerFrame : register(b0)
+{
+	row_major float4x4 view;
+	row_major float4x4 projection;
 }
 
+cbuffer UpdatedPerObject : register(b1)
+{
+	row_major float4x4 world;
+}
 
-DepthStencilState EnableDepthDisableStencil {
-	DepthEnable = TRUE;
-	DepthWriteMask = ALL;
-	DepthFunc = LESS_EQUAL;
-	StencilEnable = FALSE;
-};
-
-
-BlendState NoBlending {
-	AlphaToCoverageEnable = FALSE;
-	BlendEnable[0] = FALSE;
-};
-
-
-technique10 ShadowMap {
-	pass ShadowMap {
-		SetVertexShader(CompileShader(vs_4_0, ShadowMapVS(mul(mul(world, view), projection))));
-		SetGeometryShader(NULL);
-		SetPixelShader(NULL);
-
-		SetDepthStencilState(EnableDepthDisableStencil, 0);
-		SetBlendState(NoBlending, float4(0.0f, 0.0f, 0.0f, 0.0f), 0xFFFFFFFF);
-	}
+float4 ShadowMapVS(float4 position : POSITION0) : SV_POSITION
+{
+	float4x4 worldViewProjection = mul(mul(world, view), projection);
+	float4 pos = mul(position, worldViewProjection);
+	return pos;
 }

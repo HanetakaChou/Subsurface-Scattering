@@ -5,206 +5,161 @@
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions are met:
- * 
+ *
  *    1. Redistributions of source code must retain the above copyright notice,
  *       this list of conditions and the following disclaimer.
  *
  *    2. Redistributions in binary form must reproduce the following disclaimer
- *       in the documentation and/or other materials provided with the 
+ *       in the documentation and/or other materials provided with the
  *       distribution:
  *
  *       "Uses Separable SSS. Copyright (C) 2012 by Jorge Jimenez and Diego
  *        Gutierrez."
  *
- * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS ``AS 
- * IS'' AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, 
- * THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR 
- * PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL COPYRIGHT HOLDERS OR CONTRIBUTORS 
- * BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR 
- * CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF 
- * SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS 
- * INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN 
- * CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) 
- * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE 
+ * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS ``AS
+ * IS'' AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO,
+ * THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR
+ * PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL COPYRIGHT HOLDERS OR CONTRIBUTORS
+ * BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
+ * CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF
+ * SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS
+ * INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN
+ * CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
+ * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
  * POSSIBILITY OF SUCH DAMAGE.
  *
- * The views and conclusions contained in the software and documentation are 
+ * The views and conclusions contained in the software and documentation are
  * those of the authors and should not be interpreted as representing official
  * policies, either expressed or implied, of the copyright holders.
  */
 
 #include <sstream>
 #include "SeparableSSS.h"
+#include "Demo.h"
+
+#include "../../dxbc/SeparableSSS_SSSSBlurVS_bytecode.inl"
+#include "../../dxbc/SeparableSSS_SSSSBlurXPS_bytecode.inl"
+#include "../../dxbc/SeparableSSS_SSSSBlurYPS_bytecode.inl"
+
+struct UpdatedPerFrame
+{
+    __declspec(align(16)) DirectX::XMFLOAT4X4 currProj;
+    __declspec(align(16)) DirectX::XMFLOAT4 kernel[33];
+    float sssWidth;
+    int nSamples;
+};
+
+#define CB_UPDATEDPERFRAME 0
+#define TEX_STRENGTH 0
+#define TEX_COLOR 1
+#define TEX_DEPTH 2
+#define SAMP_POINT 0
+#define SAMP_LINEAR 1
+
 using namespace std;
 
-#pragma region Useful Macros from DXUT(copy - pasted here as we prefer this to be as self - contained as possible)
-#if defined(DEBUG) || defined(_DEBUG)
-#ifndef V
-#define V(x)                                                   \
-    {                                                          \
-        hr = (x);                                              \
-        if (FAILED(hr))                                        \
-        {                                                      \
-            DXTrace(__FILE__, (DWORD)__LINE__, hr, L#x, true); \
-        }                                                      \
-    }
-#endif
-#ifndef V_RETURN
-#define V_RETURN(x)                                                   \
-    {                                                                 \
-        hr = (x);                                                     \
-        if (FAILED(hr))                                               \
-        {                                                             \
-            return DXTrace(__FILE__, (DWORD)__LINE__, hr, L#x, true); \
-        }                                                             \
-    }
-#endif
-#else
-#ifndef V
-#define V(x)      \
-    {             \
-        hr = (x); \
-    }
-#endif
-#ifndef V_RETURN
-#define V_RETURN(x)     \
-    {                   \
-        hr = (x);       \
-        if (FAILED(hr)) \
-        {               \
-            return hr;  \
-        }               \
-    }
-#endif
-#endif
-
-#ifndef SAFE_DELETE
-#define SAFE_DELETE(p)  \
-    {                   \
-        if (p)          \
-        {               \
-            delete (p); \
-            (p) = NULL; \
-        }               \
-    }
-#endif
-#ifndef SAFE_DELETE_ARRAY
-#define SAFE_DELETE_ARRAY(p) \
-    {                        \
-        if (p)               \
-        {                    \
-            delete[](p);     \
-            (p) = NULL;      \
-        }                    \
-    }
-#endif
-#ifndef SAFE_RELEASE
-#define SAFE_RELEASE(p)     \
-    {                       \
-        if (p)              \
-        {                   \
-            (p)->Release(); \
-            (p) = NULL;     \
-        }                   \
-    }
-#endif
-#pragma endregion
-
-#pragma region This stuff is for loading headers from resources
-class ID3D10IncludeResource : public ID3D10Include
-{
-public:
-    STDMETHOD(Open)
-    (THIS_ D3D_INCLUDE_TYPE, LPCSTR pFileName, LPCVOID, LPCVOID *ppData, UINT *pBytes)
-    {
-        wstringstream s;
-        s << pFileName;
-        HRSRC src = FindResource(GetModuleHandle(NULL), s.str().c_str(), RT_RCDATA);
-        HGLOBAL res = LoadResource(GetModuleHandle(NULL), src);
-
-        *pBytes = SizeofResource(GetModuleHandle(NULL), src);
-        *ppData = (LPCVOID)LockResource(res);
-
-        return S_OK;
-    }
-
-    STDMETHOD(Close)
-    (THIS_ LPCVOID)
-    {
-        return S_OK;
-    }
-};
-#pragma endregion
-
-SeparableSSS::SeparableSSS(ID3D10Device *device,
+SeparableSSS::SeparableSSS(ID3D11Device *device,
                            int width,
                            int height,
-                           float fovy,
                            float sssWidth,
                            int nSamples,
-                           bool stencilInitialized,
-                           bool followSurface,
-                           bool separateStrengthSource,
-                           DXGI_FORMAT format) : device(device),
-                                                 sssWidth(sssWidth),
+                           DXGI_FORMAT format) : sssWidth(sssWidth),
                                                  nSamples(nSamples),
                                                  stencilInitialized(stencilInitialized),
-                                                 strength(D3DXVECTOR3(0.48f, 0.41f, 0.28f)),
-                                                 falloff(D3DXVECTOR3(1.0f, 0.37f, 0.3f))
+                                                 strength(DirectX::XMFLOAT3(0.48f, 0.41f, 0.28f)),
+                                                 falloff(DirectX::XMFLOAT3(1.0f, 0.37f, 0.3f))
 {
     HRESULT hr;
 
-    // Setup the defines for compiling the effect:
-    vector<D3D10_SHADER_MACRO> defines;
+    assert(nSamples <= 33);
 
-    stringstream s;
+    D3D11_BUFFER_DESC UpdatedPerFrameDesc =
+        {
+            sizeof(struct UpdatedPerFrame),
+            D3D11_USAGE_DYNAMIC,
+            D3D11_BIND_CONSTANT_BUFFER,
+            D3D11_CPU_ACCESS_WRITE,
+        };
+    V(device->CreateBuffer(&UpdatedPerFrameDesc, NULL, &CbufUpdatedPerFrame));
 
-    s << fovy;
-    string fovyText = s.str();
-    D3D10_SHADER_MACRO fovyMacro = {"SSSS_FOVY", fovyText.c_str()};
-    defines.push_back(fovyMacro);
+    V(device->CreateVertexShader(SeparableSSS_SSSSBlurVS_bytecode, sizeof(SeparableSSS_SSSSBlurVS_bytecode), NULL, &SSSSBlurVS));
+    V(device->CreatePixelShader(SeparableSSS_SSSSBlurXPS_bytecode, sizeof(SeparableSSS_SSSSBlurXPS_bytecode), NULL, &SSSSBlurXPS));
+    V(device->CreatePixelShader(SeparableSSS_SSSSBlurYPS_bytecode, sizeof(SeparableSSS_SSSSBlurYPS_bytecode), NULL, &SSSSBlurYPS));
 
-    s.str("");
-    s << nSamples;
-    string nSamplesText = s.str();
-    D3D10_SHADER_MACRO nSamplesMacro = {"SSSS_N_SAMPLES", nSamplesText.c_str()};
-    defines.push_back(nSamplesMacro);
+    D3D11_DEPTH_STENCIL_DESC BlurStencilDesc = {};
+    BlurStencilDesc.DepthEnable = TRUE;
+    BlurStencilDesc.DepthWriteMask = D3D11_DEPTH_WRITE_MASK_ALL;
+    BlurStencilDesc.DepthFunc = D3D11_COMPARISON_LESS;
+    BlurStencilDesc.StencilEnable = FALSE;
+    BlurStencilDesc.StencilReadMask = D3D11_DEFAULT_STENCIL_READ_MASK;
+    BlurStencilDesc.StencilWriteMask = D3D11_DEFAULT_STENCIL_WRITE_MASK;
+    BlurStencilDesc.FrontFace.StencilFunc = D3D11_COMPARISON_ALWAYS;
+    BlurStencilDesc.BackFace.StencilFunc = D3D11_COMPARISON_ALWAYS;
+    BlurStencilDesc.FrontFace.StencilDepthFailOp = D3D11_STENCIL_OP_KEEP;
+    BlurStencilDesc.BackFace.StencilDepthFailOp = D3D11_STENCIL_OP_KEEP;
+    BlurStencilDesc.FrontFace.StencilPassOp = D3D11_STENCIL_OP_KEEP;
+    BlurStencilDesc.BackFace.StencilPassOp = D3D11_STENCIL_OP_KEEP;
+    BlurStencilDesc.FrontFace.StencilFailOp = D3D11_STENCIL_OP_KEEP;
+    BlurStencilDesc.BackFace.StencilFailOp = D3D11_STENCIL_OP_KEEP;
+    BlurStencilDesc.DepthEnable = FALSE;
+    BlurStencilDesc.StencilEnable = TRUE;
+    BlurStencilDesc.FrontFace.StencilFunc = D3D11_COMPARISON_EQUAL;
+    V(device->CreateDepthStencilState(&BlurStencilDesc, &BlurStencil));
 
-    D3D10_SHADER_MACRO followSurfaceMacro = {"SSSS_FOLLOW_SURFACE", followSurface ? "1" : "0"};
-    defines.push_back(followSurfaceMacro);
+    D3D11_BLEND_DESC NoBlendingDesc = {};
+    NoBlendingDesc.AlphaToCoverageEnable = FALSE;
+    NoBlendingDesc.IndependentBlendEnable = FALSE;
+    NoBlendingDesc.RenderTarget[0].BlendEnable = FALSE;
+    NoBlendingDesc.RenderTarget[0].SrcBlend = D3D11_BLEND_ONE;
+    NoBlendingDesc.RenderTarget[0].DestBlend = D3D11_BLEND_ZERO;
+    NoBlendingDesc.RenderTarget[0].BlendOp = D3D11_BLEND_OP_ADD;
+    NoBlendingDesc.RenderTarget[0].SrcBlendAlpha = D3D11_BLEND_ONE;
+    NoBlendingDesc.RenderTarget[0].DestBlendAlpha = D3D11_BLEND_ZERO;
+    NoBlendingDesc.RenderTarget[0].BlendOpAlpha = D3D11_BLEND_OP_ADD;
+    NoBlendingDesc.RenderTarget[0].RenderTargetWriteMask = D3D11_COLOR_WRITE_ENABLE_ALL;
+    NoBlendingDesc.AlphaToCoverageEnable = FALSE;
+    NoBlendingDesc.RenderTarget[0].BlendEnable = FALSE;
+    NoBlendingDesc.RenderTarget[1].BlendEnable = FALSE;
+    V(device->CreateBlendState(&NoBlendingDesc, &NoBlending));
 
-    D3D10_SHADER_MACRO stencilInitializedMacro = {"STENCIL_INITIALIZED", stencilInitialized ? "1" : "0"};
-    defines.push_back(stencilInitializedMacro);
+    D3D11_SAMPLER_DESC PointSamplerDesc;
+    PointSamplerDesc.Filter = D3D11_FILTER_MIN_MAG_MIP_LINEAR;
+    PointSamplerDesc.AddressU = D3D11_TEXTURE_ADDRESS_CLAMP;
+    PointSamplerDesc.AddressV = D3D11_TEXTURE_ADDRESS_CLAMP;
+    PointSamplerDesc.AddressW = D3D11_TEXTURE_ADDRESS_CLAMP;
+    PointSamplerDesc.MinLOD = -FLT_MAX;
+    PointSamplerDesc.MaxLOD = FLT_MAX;
+    PointSamplerDesc.MipLODBias = 0.0f;
+    PointSamplerDesc.MaxAnisotropy = 1;
+    PointSamplerDesc.ComparisonFunc = D3D11_COMPARISON_NEVER;
+    PointSamplerDesc.BorderColor[0] = 1.0f;
+    PointSamplerDesc.BorderColor[1] = 1.0f;
+    PointSamplerDesc.BorderColor[2] = 1.0f;
+    PointSamplerDesc.BorderColor[3] = 1.0f;
+    PointSamplerDesc.Filter = D3D11_FILTER_MIN_MAG_MIP_POINT;
+    V(device->CreateSamplerState(&PointSamplerDesc, &PointSampler));
 
-    if (separateStrengthSource)
-    {
-        D3D10_SHADER_MACRO strengthSourceMacro = {"SSSS_STREGTH_SOURCE", "(SSSSSample(strengthTex, texcoord).a)"};
-        defines.push_back(strengthSourceMacro);
-    }
+    D3D11_SAMPLER_DESC LinearSamplerDesc;
+    LinearSamplerDesc.Filter = D3D11_FILTER_MIN_MAG_MIP_LINEAR;
+    LinearSamplerDesc.AddressU = D3D11_TEXTURE_ADDRESS_CLAMP;
+    LinearSamplerDesc.AddressV = D3D11_TEXTURE_ADDRESS_CLAMP;
+    LinearSamplerDesc.AddressW = D3D11_TEXTURE_ADDRESS_CLAMP;
+    LinearSamplerDesc.MinLOD = -FLT_MAX;
+    LinearSamplerDesc.MaxLOD = FLT_MAX;
+    LinearSamplerDesc.MipLODBias = 0.0f;
+    LinearSamplerDesc.MaxAnisotropy = 1;
+    LinearSamplerDesc.ComparisonFunc = D3D11_COMPARISON_NEVER;
+    LinearSamplerDesc.BorderColor[0] = 1.0f;
+    LinearSamplerDesc.BorderColor[1] = 1.0f;
+    LinearSamplerDesc.BorderColor[2] = 1.0f;
+    LinearSamplerDesc.BorderColor[3] = 1.0f;
+    LinearSamplerDesc.Filter = D3D11_FILTER_MIN_MAG_MIP_LINEAR;
+    V(device->CreateSamplerState(&LinearSamplerDesc, &LinearSampler));
 
-    D3D10_SHADER_MACRO null = {NULL, NULL};
-    defines.push_back(null);
-
-    // Now, let's load the effect:
-    ID3D10IncludeResource includeResource;
-    V(D3DX10CreateEffectFromResource(GetModuleHandle(NULL), L"SeparableSSS.fx", NULL, &defines.front(), &includeResource, "fx_4_0", D3D10_SHADER_ENABLE_STRICTNESS | D3D10_SHADER_OPTIMIZATION_LEVEL3, 0, device, NULL, NULL, &effect, NULL, NULL));
-
-    // Setup the fullscreen quad:
-    D3D10_PASS_DESC desc;
-    V(effect->GetTechniqueByName("SSS")->GetPassByName("SSSSBlurX")->GetDesc(&desc));
-    quad = new Quad(device, desc);
+    quad = new Quad(device, SeparableSSS_SSSSBlurVS_bytecode, sizeof(SeparableSSS_SSSSBlurVS_bytecode));
 
     // Create the temporal render target:
     tmpRT = new RenderTarget(device, width, height, format);
-
-    // Create some handles for techniques and variables:
-    technique = effect->GetTechniqueByName("SSS");
-    idVariable = effect->GetVariableByName("id")->AsScalar();
-    sssWidthVariable = effect->GetVariableByName("sssWidth")->AsScalar();
-    kernelVariable = effect->GetVariableByName("kernel")->AsVector();
-    colorTexVariable = effect->GetVariableByName("colorTex")->AsShaderResource();
-    depthTexVariable = effect->GetVariableByName("depthTex")->AsShaderResource();
-    strengthTexVariable = effect->GetVariableByName("strengthTex")->AsShaderResource();
 
     // And finally, calculate the sample positions and weights:
     calculateKernel();
@@ -213,27 +168,35 @@ SeparableSSS::SeparableSSS(ID3D10Device *device,
 SeparableSSS::~SeparableSSS()
 {
     SAFE_DELETE(tmpRT);
-    SAFE_RELEASE(effect);
     SAFE_DELETE(quad);
+    SAFE_RELEASE(LinearSampler);
+    SAFE_RELEASE(PointSampler);
+    SAFE_RELEASE(NoBlending);
+    SAFE_RELEASE(BlurStencil);
+    SAFE_RELEASE(CbufUpdatedPerFrame);
+    SAFE_RELEASE(SSSSBlurYPS);
+    SAFE_RELEASE(SSSSBlurXPS);
+    SAFE_RELEASE(SSSSBlurVS);
 }
 
-D3DXVECTOR3 SeparableSSS::gaussian(float variance, float r)
+DirectX::XMFLOAT3 SeparableSSS::gaussian(float variance, float r)
 {
     /**
      * We use a falloff to modulate the shape of the profile. Big falloffs
      * spreads the shape making it wider, while small falloffs make it
      * narrower.
      */
-    D3DXVECTOR3 g;
-    for (int i = 0; i < 3; i++)
-    {
-        float rr = r / (0.001f + falloff[i]);
-        g[i] = exp((-(rr * rr)) / (2.0f * variance)) / (2.0f * 3.14f * variance);
-    }
+    DirectX::XMFLOAT3 g;
+    float rr_x = r / (0.001f + falloff.x);
+    float rr_y = r / (0.001f + falloff.y);
+    float rr_z = r / (0.001f + falloff.z);
+    g.x = exp((-(rr_x * rr_x)) / (2.0f * variance)) / (2.0f * 3.14f * variance);
+    g.y = exp((-(rr_y * rr_y)) / (2.0f * variance)) / (2.0f * 3.14f * variance);
+    g.z = exp((-(rr_z * rr_z)) / (2.0f * variance)) / (2.0f * 3.14f * variance);
     return g;
 }
 
-D3DXVECTOR3 SeparableSSS::profile(float r)
+DirectX::XMFLOAT3 SeparableSSS::profile(float r)
 {
     /**
      * We used the red channel of the original skin profile defined in
@@ -243,18 +206,23 @@ D3DXVECTOR3 SeparableSSS::profile(float r)
      * the profile. For example, it allows to create blue SSS gradients, which
      * could be useful in case of rendering blue creatures.
      */
-    return // 0.233f * gaussian(0.0064f, r) + /* We consider this one to be directly bounced light, accounted by the strength parameter (see @STRENGTH) */
-        0.100f * gaussian(0.0484f, r) +
-        0.118f * gaussian(0.187f, r) +
-        0.113f * gaussian(0.567f, r) +
-        0.358f * gaussian(1.99f, r) +
-        0.078f * gaussian(7.41f, r);
+    
+    // 0.233f * gaussian(0.0064f, r) + /* We consider this one to be directly bounced light, accounted by the strength parameter (see @STRENGTH) */
+    DirectX::XMFLOAT3 g_1 = gaussian(0.0484f, r);
+    DirectX::XMFLOAT3 g_2 = gaussian(0.187f, r);
+    DirectX::XMFLOAT3 g_3 = gaussian(0.567f, r);
+    DirectX::XMFLOAT3 g_4 = gaussian(1.99f, r);
+    DirectX::XMFLOAT3 g_5 = gaussian(7.41f, r);
+
+    DirectX::XMFLOAT3 g;
+    g.x = 0.100f * g_1.x + 0.118f * g_2.x + 0.113f * g_3.x + 0.358f * g_4.x + 0.078f * g_5.x;
+    g.y = 0.100f * g_1.y + 0.118f * g_2.y + 0.113f * g_3.y + 0.358f * g_4.y + 0.078f * g_5.y;
+    g.z = 0.100f * g_1.z + 0.118f * g_2.z + 0.113f * g_3.z + 0.358f * g_4.z + 0.078f * g_5.z;
+    return g;
 }
 
 void SeparableSSS::calculateKernel()
 {
-    HRESULT hr;
-
     const float RANGE = nSamples > 20 ? 3.0f : 2.0f;
     const float EXPONENT = 2.0f;
 
@@ -275,22 +243,26 @@ void SeparableSSS::calculateKernel()
         float w0 = i > 0 ? abs(kernel[i].w - kernel[i - 1].w) : 0.0f;
         float w1 = i < nSamples - 1 ? abs(kernel[i].w - kernel[i + 1].w) : 0.0f;
         float area = (w0 + w1) / 2.0f;
-        D3DXVECTOR3 t = area * profile(kernel[i].w);
-        kernel[i].x = t.x;
-        kernel[i].y = t.y;
-        kernel[i].z = t.z;
+        DirectX::XMFLOAT3 r = profile(kernel[i].w);
+        kernel[i].x = area * r.x;
+        kernel[i].y = area * r.y;
+        kernel[i].z = area * r.z;
     }
 
     // We want the offset 0.0 to come first:
-    D3DXVECTOR4 t = kernel[nSamples / 2];
+    DirectX::XMFLOAT4 t = kernel[nSamples / 2];
     for (int i = nSamples / 2; i > 0; i--)
         kernel[i] = kernel[i - 1];
     kernel[0] = t;
 
     // Calculate the sum of the weights, we will need to normalize them below:
-    D3DXVECTOR3 sum = D3DXVECTOR3(0.0f, 0.0f, 0.0f);
+    DirectX::XMFLOAT3 sum = DirectX::XMFLOAT3(0.0f, 0.0f, 0.0f);
     for (int i = 0; i < nSamples; i++)
-        sum += D3DXVECTOR3(kernel[i]);
+    {
+        sum.x += kernel[i].x;
+        sum.y += kernel[i].y;
+        sum.z += kernel[i].z;
+    }
 
     // Normalize the weights:
     for (int i = 0; i < nSamples; i++)
@@ -314,57 +286,85 @@ void SeparableSSS::calculateKernel()
         kernel[i].y *= strength.y;
         kernel[i].z *= strength.z;
     }
-
-    // Finally, set 'em!
-    V(kernelVariable->SetFloatVectorArray((float *)&kernel.front(), 0, nSamples));
 }
 
-void SeparableSSS::go(ID3D10RenderTargetView *mainRTV,
-                      ID3D10ShaderResourceView *mainSRV,
-                      ID3D10ShaderResourceView *depthSRV,
-                      ID3D10DepthStencilView *depthDSV,
-                      ID3D10ShaderResourceView *stregthSRV,
-                      int id)
+void SeparableSSS::go(ID3D11DeviceContext *context,
+                      ID3D11RenderTargetView *mainRTV,
+                      ID3D11ShaderResourceView *mainSRV,
+                      ID3D11ShaderResourceView *depthSRV,
+                      ID3D11DepthStencilView *depthDSV,
+                      ID3D11ShaderResourceView *stregthSRV)
 {
-    HRESULT hr;
-
-    // Save the state:
-    SaveViewportsScope saveViewport(device);
-    SaveRenderTargetsScope saveRenderTargets(device);
-    SaveInputLayoutScope saveInputLayout(device);
-
     // Clear the temporal render target:
     float clearColor[4] = {0.0f, 0.0f, 0.0f, 0.0f};
-    device->ClearRenderTargetView(*tmpRT, clearColor);
+    context->ClearRenderTargetView(*tmpRT, clearColor);
 
     // Clear the stencil buffer if it was not available, and thus one must be
     // initialized on the fly:
     if (!stencilInitialized)
-        device->ClearDepthStencilView(depthDSV, D3D10_CLEAR_STENCIL, 1.0, 0);
+        context->ClearDepthStencilView(depthDSV, D3D11_CLEAR_STENCIL, 1.0, 0);
 
     // Set variables:
-    V(idVariable->SetInt(id));
-    V(sssWidthVariable->SetFloat(sssWidth));
-    V(depthTexVariable->SetResource(depthSRV));
-    V(strengthTexVariable->SetResource(stregthSRV));
+    D3D11_MAPPED_SUBRESOURCE mappedResource;
+    context->Map(CbufUpdatedPerFrame, 0, D3D11_MAP_WRITE_DISCARD, 0, &mappedResource);
+    ((struct UpdatedPerFrame *)mappedResource.pData)->currProj = camera.getProjectionMatrix();
+    memcpy(((struct UpdatedPerFrame *)mappedResource.pData)->kernel, &kernel[0], sizeof(DirectX::XMFLOAT4) * kernel.size());
+    ((struct UpdatedPerFrame *)mappedResource.pData)->sssWidth = sssWidth;
+    ((struct UpdatedPerFrame *)mappedResource.pData)->nSamples = nSamples;
+    context->Unmap(CbufUpdatedPerFrame, 0);
+
+    context->PSSetShaderResources(TEX_STRENGTH, 1U, &stregthSRV);
+    context->PSSetShaderResources(TEX_DEPTH, 1U, &depthSRV);
 
     // Set input layout and viewport:
-    quad->setInputLayout();
-    tmpRT->setViewport();
+    quad->setInputLayout(context);
+    tmpRT->setViewport(context);
+
+    UINT StencilRef = 1;
 
     // Run the horizontal pass:
-    V(colorTexVariable->SetResource(mainSRV));
-    technique->GetPassByName("SSSSBlurX")->Apply(0);
-    device->OMSetRenderTargets(1, *tmpRT, depthDSV);
-    quad->draw();
-    device->OMSetRenderTargets(0, NULL, NULL);
+    {
+        context->PSSetShaderResources(TEX_COLOR, 1U, &mainSRV);
+        context->VSSetConstantBuffers(CB_UPDATEDPERFRAME, 1U, &CbufUpdatedPerFrame);
+        context->PSSetConstantBuffers(CB_UPDATEDPERFRAME, 1U, &CbufUpdatedPerFrame);
+        context->PSSetSamplers(SAMP_POINT, 1, &PointSampler);
+        context->PSSetSamplers(SAMP_LINEAR, 1, &LinearSampler);
+        context->VSSetShader(SSSSBlurVS, NULL, 0);
+        context->GSSetShader(NULL, NULL, 0);
+        context->PSSetShader(SSSSBlurXPS, NULL, 0);
+        context->OMSetDepthStencilState(BlurStencil, StencilRef);
+        FLOAT BlendFactor[4] = {0.0f, 0.0f, 0.0f, 0.0f};
+        context->OMSetBlendState(NoBlending, BlendFactor, 0xFFFFFFFF);
+
+        context->OMSetRenderTargets(1, *tmpRT, depthDSV);
+        quad->draw(context);
+        ID3D11RenderTargetView *pRenderTargetViews[1] = {NULL};
+        context->OMSetRenderTargets(1, pRenderTargetViews, NULL);
+    }
 
     // And finish with the vertical one:
-    V(colorTexVariable->SetResource(*tmpRT));
-    technique->GetPassByName("SSSSBlurY")->Apply(0);
-    device->OMSetRenderTargets(1, &mainRTV, depthDSV);
-    quad->draw();
-    device->OMSetRenderTargets(0, NULL, NULL);
+    {
+        ID3D11ShaderResourceView *tmpRTSRV = *tmpRT;
+        context->PSSetShaderResources(TEX_COLOR, 1U, &tmpRTSRV);
+        context->VSSetConstantBuffers(CB_UPDATEDPERFRAME, 1U, &CbufUpdatedPerFrame);
+        context->PSSetConstantBuffers(CB_UPDATEDPERFRAME, 1U, &CbufUpdatedPerFrame);
+        context->PSSetSamplers(SAMP_POINT, 1, &PointSampler);
+        context->PSSetSamplers(SAMP_LINEAR, 1, &LinearSampler);
+        context->VSSetShader(SSSSBlurVS, NULL, 0);
+        context->GSSetShader(NULL, NULL, 0);
+        context->PSSetShader(SSSSBlurYPS, NULL, 0);
+        context->OMSetDepthStencilState(BlurStencil, StencilRef);
+        FLOAT BlendFactor[4] = {0.0f, 0.0f, 0.0f, 0.0f};
+        context->OMSetBlendState(NoBlending, BlendFactor, 0xFFFFFFFF);
+
+        context->OMSetRenderTargets(1, &mainRTV, depthDSV);
+        quad->draw(context);
+        ID3D11RenderTargetView *pRenderTargetViews[1] = {NULL};
+        context->OMSetRenderTargets(1, pRenderTargetViews, NULL);
+    }
+
+    ID3D11ShaderResourceView *pShaderResourceViews[4] = {NULL, NULL, NULL, NULL};
+    context->PSSetShaderResources(0, 4, pShaderResourceViews);
 }
 
 string SeparableSSS::getKernelCode() const

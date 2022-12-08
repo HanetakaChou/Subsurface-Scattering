@@ -23,199 +23,137 @@
  * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
  * POSSIBILITY OF SUCH DAMAGE.
  *
- * The views and conclusions contained in the software and documentation are 
+ * The views and conclusions contained in the software and documentation are
  * those of the authors and should not be interpreted as representing official
  * policies, either expressed or implied, of the copyright holders.
  */
 
-#ifndef RENDERTARGET_H
-#define RENDERTARGET_H
+#ifndef _RENDERTARGET_H_
+#define _RENDERTARGET_H_ 1
 
+#include <sdkddkver.h>
+#define NOMINMAX 1
+#define WIN32_LEAN_AND_MEAN 1
+#include <DXUT.h>
 #include <vector>
-#include <dxgi.h>
-#include <d3d10.h>
-#include <d3dx10.h>
-#include <dxerr.h>
 
 class NoMSAA : public DXGI_SAMPLE_DESC
 {
 public:
-    inline NoMSAA()
-    {
-        Count = 1;
-        Quality = 0;
-    }
+	inline NoMSAA()
+	{
+		Count = 1;
+		Quality = 0;
+	}
 };
 
 class RenderTarget
 {
 public:
-    RenderTarget(ID3D10Device *device, int width, int height,
-                 DXGI_FORMAT format,
-                 const DXGI_SAMPLE_DESC &sampleDesc = NoMSAA(),
-                 bool typeless = true);
+	RenderTarget(ID3D11Device* device, int width, int height,
+		DXGI_FORMAT format,
+		const DXGI_SAMPLE_DESC& sampleDesc = NoMSAA(),
+		bool typeless = true);
 
-    /**
-         * These two are just convenience constructors to build from existing
-         * resources.
-         */
-    RenderTarget(ID3D10Device *device, ID3D10Texture2D *texture2D, DXGI_FORMAT format);
-    RenderTarget(ID3D10Device *device,
-                 ID3D10RenderTargetView *renderTargetView,
-                 ID3D10ShaderResourceView *shaderResourceView);
+	/**
+		 * These two are just convenience constructors to build from existing
+		 * resources.
+		 */
+	RenderTarget(ID3D11Device* device, ID3D11Texture2D* texture2D, DXGI_FORMAT format);
+	RenderTarget(ID3D11Device* device,
+		ID3D11RenderTargetView* renderTargetView,
+		ID3D11ShaderResourceView* shaderResourceView);
 
-    ~RenderTarget();
+	~RenderTarget();
 
-    operator ID3D10Texture2D *() const { return texture2D; }
-    operator ID3D10RenderTargetView *() const { return renderTargetView; }
-    operator ID3D10RenderTargetView * const *() const { return &renderTargetView; }
-    operator ID3D10ShaderResourceView *() const { return shaderResourceView; }
+	operator ID3D11Texture2D* () const { return texture2D; }
+	operator ID3D11RenderTargetView* () const { return renderTargetView; }
+	operator ID3D11RenderTargetView* const* () const { return &renderTargetView; }
+	operator ID3D11ShaderResourceView* () const { return shaderResourceView; }
 
-    int getWidth() const { return width; }
-    int getHeight() const { return height; }
+	int getWidth() const { return width; }
+	int getHeight() const { return height; }
 
-    void setViewport(float minDepth = 0.0f, float maxDepth = 1.0f) const;
+	void setViewport(ID3D11DeviceContext* context, float minDepth = 0.0f, float maxDepth = 1.0f) const;
 
-    static DXGI_FORMAT makeTypeless(DXGI_FORMAT format);
+	static DXGI_FORMAT makeTypeless(DXGI_FORMAT format);
 
 private:
-    void createViews(ID3D10Device *device, D3D10_TEXTURE2D_DESC desc, DXGI_FORMAT format);
+	void createViews(ID3D11Device* device, D3D11_TEXTURE2D_DESC desc, DXGI_FORMAT format);
 
-    ID3D10Device *device;
-    int width, height;
-    ID3D10Texture2D *texture2D;
-    ID3D10RenderTargetView *renderTargetView;
-    ID3D10ShaderResourceView *shaderResourceView;
+	int width, height;
+	ID3D11Texture2D* texture2D;
+	ID3D11RenderTargetView* renderTargetView;
+	ID3D11ShaderResourceView* shaderResourceView;
 };
 
 class DepthStencil
 {
 public:
-    DepthStencil(ID3D10Device *device, int width, int height,
-                 DXGI_FORMAT texture2DFormat = DXGI_FORMAT_R32_TYPELESS,
-                 DXGI_FORMAT depthStencilViewFormat = DXGI_FORMAT_D32_FLOAT,
-                 DXGI_FORMAT shaderResourceViewFormat = DXGI_FORMAT_R32_FLOAT,
-                 const DXGI_SAMPLE_DESC &sampleDesc = NoMSAA());
-    ~DepthStencil();
+	DepthStencil(ID3D11Device* device, int width, int height,
+		DXGI_FORMAT texture2DFormat = DXGI_FORMAT_R32_TYPELESS,
+		DXGI_FORMAT depthStencilViewFormat = DXGI_FORMAT_D32_FLOAT,
+		DXGI_FORMAT shaderResourceViewFormat = DXGI_FORMAT_R32_FLOAT,
+		const DXGI_SAMPLE_DESC& sampleDesc = NoMSAA());
+	~DepthStencil();
 
-    operator ID3D10Texture2D * const() { return texture2D; }
-    operator ID3D10DepthStencilView * const() { return depthStencilView; }
-    operator ID3D10ShaderResourceView * const() { return shaderResourceView; }
+	operator ID3D11Texture2D* const() { return texture2D; }
+	operator ID3D11DepthStencilView* const() { return depthStencilView; }
+	operator ID3D11ShaderResourceView* const() { return shaderResourceView; }
 
-    int getWidth() const { return width; }
-    int getHeight() const { return height; }
+	int getWidth() const { return width; }
+	int getHeight() const { return height; }
 
-    void setViewport(float minDepth = 0.0f, float maxDepth = 1.0f) const;
+	void setViewport(ID3D11DeviceContext* context, float minDepth = 0.0f, float maxDepth = 1.0f) const;
 
 private:
-    ID3D10Device *device;
-    int width, height;
-    ID3D10Texture2D *texture2D;
-    ID3D10DepthStencilView *depthStencilView;
-    ID3D10ShaderResourceView *shaderResourceView;
+	ID3D11Device* device;
+	int width, height;
+	ID3D11Texture2D* texture2D;
+	ID3D11DepthStencilView* depthStencilView;
+	ID3D11ShaderResourceView* shaderResourceView;
 };
 
 class BackbufferRenderTarget
 {
 public:
-    BackbufferRenderTarget(ID3D10Device *device, IDXGISwapChain *swapChain);
-    ~BackbufferRenderTarget();
+	BackbufferRenderTarget(ID3D11Device* device, IDXGISwapChain* swapChain);
+	~BackbufferRenderTarget();
 
-    operator ID3D10Texture2D *() const { return texture2D; }
-    operator ID3D10RenderTargetView *() const { return renderTargetView; }
-    operator ID3D10RenderTargetView * const *() const { return &renderTargetView; }
-    operator ID3D10ShaderResourceView *() const { return shaderResourceView; }
+	operator ID3D11Texture2D* () const { return texture2D; }
+	operator ID3D11RenderTargetView* () const { return renderTargetView; }
+	operator ID3D11RenderTargetView* const* () const { return &renderTargetView; }
+	operator ID3D11ShaderResourceView* () const { return shaderResourceView; }
 
-    int getWidth() const { return width; }
-    int getHeight() const { return height; }
+	int getWidth() const { return width; }
+	int getHeight() const { return height; }
 
 private:
-    int width, height;
-    ID3D10Texture2D *texture2D;
-    ID3D10RenderTargetView *renderTargetView;
-    ID3D10ShaderResourceView *shaderResourceView;
+	int width, height;
+	ID3D11Texture2D* texture2D;
+	ID3D11RenderTargetView* renderTargetView;
+	ID3D11ShaderResourceView* shaderResourceView;
 };
 
 class Quad
 {
 public:
-    Quad(ID3D10Device *device, const D3D10_PASS_DESC &desc);
-    ~Quad();
-    void setInputLayout() { device->IASetInputLayout(vertexLayout); }
-    void draw();
+	Quad(ID3D11Device* device, const void* pShaderBytecodeWithInputSignature, SIZE_T BytecodeLength);
+	~Quad();
+	void setInputLayout(ID3D11DeviceContext* context) { context->IASetInputLayout(vertexLayout); }
+	void draw(ID3D11DeviceContext* context);
 
 private:
-    ID3D10Device *device;
-    ID3D10Buffer *buffer;
-    ID3D10InputLayout *vertexLayout;
-};
-
-class SaveViewportsScope
-{
-public:
-    SaveViewportsScope(ID3D10Device *device);
-    ~SaveViewportsScope();
-
-private:
-    ID3D10Device *device;
-    UINT numViewports;
-    std::vector<D3D10_VIEWPORT> viewports;
-};
-
-class SaveRenderTargetsScope
-{
-public:
-    SaveRenderTargetsScope(ID3D10Device *device);
-    ~SaveRenderTargetsScope();
-
-private:
-    ID3D10Device *device;
-    ID3D10RenderTargetView *renderTargets[D3D10_SIMULTANEOUS_RENDER_TARGET_COUNT];
-    ID3D10DepthStencilView *depthStencil;
-};
-
-class SaveInputLayoutScope
-{
-public:
-    SaveInputLayoutScope(ID3D10Device *device);
-    ~SaveInputLayoutScope();
-
-private:
-    ID3D10Device *device;
-    ID3D10InputLayout *inputLayout;
-};
-
-class SaveBlendStateScope
-{
-public:
-    SaveBlendStateScope(ID3D10Device *device);
-    ~SaveBlendStateScope();
-
-private:
-    ID3D10Device *device;
-    ID3D10BlendState *blendState;
-    FLOAT blendFactor[4];
-    UINT sampleMask;
-};
-
-class SaveDepthStencilScope
-{
-public:
-    SaveDepthStencilScope(ID3D10Device *device);
-    ~SaveDepthStencilScope();
-
-private:
-    ID3D10Device *device;
-    ID3D10DepthStencilState *depthStencilState;
-    UINT stencilRef;
+	ID3D11Buffer* buffer;
+	ID3D11InputLayout* vertexLayout;
 };
 
 class Utils
 {
 public:
-    static ID3D10Texture2D *createStagingTexture(ID3D10Device *device, ID3D10Texture2D *texture);
-    static D3D10_VIEWPORT viewportFromView(ID3D10View *view);
-    static D3D10_VIEWPORT viewportFromTexture2D(ID3D10Texture2D *texture2D);
+	static ID3D11Texture2D* createStagingTexture(ID3D11Device* device, ID3D11Texture2D* texture);
+	static D3D11_VIEWPORT viewportFromView(ID3D11View* view);
+	static D3D11_VIEWPORT viewportFromTexture2D(ID3D11Texture2D* texture2D);
 };
 
 #endif
