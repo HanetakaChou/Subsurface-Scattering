@@ -38,38 +38,38 @@
 // This file is included from both C++ and HLSL; it defines shared resource slot assignments
 
 #ifdef __cplusplus
-#	define CBREG(n)						n
-#	define TEXREG(n)					n
-#	define SAMPREG(n)					n
+#define CBREG(n) n
+#define TEXREG(n) n
+#define SAMPREG(n) n
 #else
-#	define CBREG(n)						register(b##n)
-#	define TEXREG(n)					register(t##n)
-#	define SAMPREG(n)					register(s##n)
+#define CBREG(n) register(b##n)
+#define TEXREG(n) register(t##n)
+#define SAMPREG(n) register(s##n)
 #endif
 
-#define CB_DEBUG						CBREG(0)
-#define CB_FRAME						CBREG(1)
-#define CB_SHADER						CBREG(2)
+#define CB_DEBUG CBREG(0)
+#define CB_FRAME CBREG(1)
+#define CB_SHADER CBREG(2)
 
-#define TEX_CUBE_DIFFUSE				TEXREG(0)
-#define TEX_CUBE_SPEC					TEXREG(1)
-#define TEX_SHADOW_MAP					TEXREG(2)
-#define TEX_VSM							TEXREG(3)
-#define TEX_DIFFUSE0					TEXREG(4)
-#define TEX_DIFFUSE1					TEXREG(5)
-#define TEX_NORMAL						TEXREG(6)
-#define TEX_SPEC						TEXREG(7)
-#define TEX_GLOSS						TEXREG(8)
-#define TEX_SSS_MASK					TEXREG(9)
-#define TEX_DEEP_SCATTER_COLOR			TEXREG(10)
-#define TEX_SOURCE						TEXREG(11)
-#define TEX_CURVATURE_LUT				TEXREG(12)
-#define TEX_SHADOW_LUT					TEXREG(13)
+#define TEX_CUBE_DIFFUSE TEXREG(0)
+#define TEX_CUBE_SPEC TEXREG(1)
+#define TEX_SHADOW_MAP TEXREG(2)
+#define TEX_VSM TEXREG(3)
+#define TEX_DIFFUSE0 TEXREG(4)
+#define TEX_DIFFUSE1 TEXREG(5)
+#define TEX_NORMAL TEXREG(6)
+#define TEX_SPEC TEXREG(7)
+#define TEX_GLOSS TEXREG(8)
+#define TEX_SSS_MASK TEXREG(9)
+#define TEX_DEEP_SCATTER_COLOR TEXREG(10)
+#define TEX_SOURCE TEXREG(11)
+#define TEX_CURVATURE_LUT TEXREG(12)
+#define TEX_SHADOW_LUT TEXREG(13)
 
-#define SAMP_POINT_CLAMP				SAMPREG(0)
-#define SAMP_BILINEAR_CLAMP				SAMPREG(1)
-#define SAMP_TRILINEAR_REPEAT			SAMPREG(2)
-#define SAMP_TRILINEAR_REPEAT_ANISO		SAMPREG(3)
-#define SAMP_PCF						SAMPREG(4)
+#define SAMP_POINT_CLAMP SAMPREG(0)
+#define SAMP_BILINEAR_CLAMP SAMPREG(1)
+#define SAMP_TRILINEAR_REPEAT SAMPREG(2)
+#define SAMP_TRILINEAR_REPEAT_ANISO SAMPREG(3)
+#define SAMP_PCF SAMPREG(4)
 
 #endif // RESOURCES_H

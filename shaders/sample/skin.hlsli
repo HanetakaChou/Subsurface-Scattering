@@ -41,18 +41,16 @@
 
 cbuffer cbShader : CB_SHADER
 {
-	float		g_normalStrength;
-	float		g_gloss;
+	float g_normalStrength;
+	float g_gloss;
 
-	GFSDK_FaceWorks_CBData	g_faceworksData;
+	GFSDK_FaceWorks_CBData g_faceworksData;
 }
 
-Texture2D<float3> g_texDiffuse			: TEX_DIFFUSE0;
-Texture2D<float3> g_texNormal			: TEX_NORMAL;
-Texture2D<float> g_texSpec				: TEX_SPEC;
-Texture2D<float3> g_texDeepScatterColor	: TEX_DEEP_SCATTER_COLOR;
-
-
+Texture2D<float3> g_texDiffuse : TEX_DIFFUSE0;
+Texture2D<float3> g_texNormal : TEX_NORMAL;
+Texture2D<float> g_texSpec : TEX_SPEC;
+Texture2D<float3> g_texDeepScatterColor : TEX_DEEP_SCATTER_COLOR;
 
 void SkinMegashader(
 	in Vertex i_vtx,
@@ -76,10 +74,10 @@ void SkinMegashader(
 	{
 		// Sample normal map with level clamped based on blur, to get normal for SSS
 		float level = GFSDK_FaceWorks_CalculateMipLevelForBlurredNormal(
-						g_faceworksData, g_texNormal, g_ssTrilinearRepeatAniso, uv);
+			g_faceworksData, g_texNormal, g_ssTrilinearRepeatAniso, uv);
 		normalTangentBlurred = UnpackNormal(
-									g_texNormal.SampleLevel(g_ssTrilinearRepeatAniso, uv, level),
-									g_normalStrength);
+			g_texNormal.SampleLevel(g_ssTrilinearRepeatAniso, uv, level),
+			g_normalStrength);
 	}
 
 	float3 rgbDeepScatter;
@@ -100,7 +98,7 @@ void SkinMegashader(
 		rgbDeepScatter,
 		g_faceworksData,
 		o_rgbLit,
-		true,	// useNormalMap
+		true, // useNormalMap
 		useSSS,
 		useDeepScatter);
 }

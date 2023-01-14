@@ -37,14 +37,17 @@
 
 cbuffer cbShader : CB_SHADER
 {
-	GFSDK_FaceWorks_CBData	g_faceworksData;
+	GFSDK_FaceWorks_CBData g_faceworksData;
 }
 
 void main(
 	in Vertex i_vtx,
-	in float3 i_vecCamera : CAMERA,
-	in float4 i_uvzwShadow : UVZW_SHADOW,
-	out float4 o_rgba : SV_Target)
+	in float3 i_vecCamera
+	: CAMERA,
+	  in float4 i_uvzwShadow
+	: UVZW_SHADOW,
+	  out float4 o_rgba
+	: SV_Target)
 {
 	float3 normalGeom = normalize(i_vtx.m_normal);
 	float3 uvzShadow = i_uvzwShadow.xyz / i_uvzwShadow.w;
@@ -55,8 +58,8 @@ void main(
 	uvzShadow += normalShadow * g_deepScatterNormalOffset;
 
 	float thickness = GFSDK_FaceWorks_EstimateThicknessFromParallelShadowPoisson32(
-						g_faceworksData,
-						g_texShadowMap, g_ssBilinearClamp, uvzShadow);
+		g_faceworksData,
+		g_texShadowMap, g_ssBilinearClamp, uvzShadow);
 
 	o_rgba = float4(thickness.xxx * 0.05, 1.0);
 }

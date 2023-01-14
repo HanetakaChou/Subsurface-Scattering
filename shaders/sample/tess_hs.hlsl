@@ -41,11 +41,11 @@ void calcHSConstants(
 {
 	// Backface culling: check if the camera is behind all three tangent planes
 	float3 vecNdotV =
-	{
-		dot(g_posCamera - i_cps[0].m_pos, i_cps[0].m_normal),
-		dot(g_posCamera - i_cps[1].m_pos, i_cps[1].m_normal),
-		dot(g_posCamera - i_cps[2].m_pos, i_cps[2].m_normal),
-	};
+		{
+			dot(g_posCamera - i_cps[0].m_pos, i_cps[0].m_normal),
+			dot(g_posCamera - i_cps[1].m_pos, i_cps[1].m_normal),
+			dot(g_posCamera - i_cps[2].m_pos, i_cps[2].m_normal),
+		};
 	if (all(vecNdotV < 0.0))
 	{
 		o_pcd.m_tessFactor[0] = 0.0;
@@ -61,9 +61,9 @@ void calcHSConstants(
 	float4 posClip0 = mul(float4(i_cps[0].m_pos, 1.0), g_matWorldToClip);
 	float4 posClip1 = mul(float4(i_cps[1].m_pos, 1.0), g_matWorldToClip);
 	float4 posClip2 = mul(float4(i_cps[2].m_pos, 1.0), g_matWorldToClip);
-	float3 xs = { posClip0.x, posClip1.x, posClip2.x };
-	float3 ys = { posClip0.y, posClip1.y, posClip2.y };
-	float3 ws = { posClip0.w, posClip1.w, posClip2.w };
+	float3 xs = {posClip0.x, posClip1.x, posClip2.x};
+	float3 ys = {posClip0.y, posClip1.y, posClip2.y};
+	float3 ws = {posClip0.w, posClip1.w, posClip2.w};
 	if (all(xs < -ws) || all(xs > ws) || all(ys < -ws) || all(ys > ws))
 	{
 		o_pcd.m_tessFactor[0] = 0.0;
@@ -107,18 +107,19 @@ void calcHSConstants(
 	// Set interior tess factor to maximum of edge factors
 	o_pcd.m_insideTessFactor = max(max(o_pcd.m_tessFactor[0],
 									   o_pcd.m_tessFactor[1]),
-									   o_pcd.m_tessFactor[2]);
+								   o_pcd.m_tessFactor[2]);
 }
 
 [domain("tri")]
-[maxtessfactor(s_tessFactorMax)]
-[outputcontrolpoints(3)]
-[outputtopology("triangle_cw")]
-[partitioning("fractional_odd")]
-[patchconstantfunc("calcHSConstants")]
-Vertex main(
-	in InputPatch<Vertex, 3> i_cps,
-	in uint iCp : SV_OutputControlPointID)
+	[maxtessfactor(s_tessFactorMax)]
+	[outputcontrolpoints(3)]
+	[outputtopology("triangle_cw")]
+	[partitioning("fractional_odd")]
+	[patchconstantfunc("calcHSConstants")] Vertex
+	main(
+		in InputPatch<Vertex, 3> i_cps,
+		in uint iCp
+		: SV_OutputControlPointID)
 {
 	return i_cps[iCp];
 }

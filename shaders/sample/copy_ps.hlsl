@@ -32,17 +32,17 @@
 //
 //----------------------------------------------------------------------------------
 
-
 #include "common.hlsli"
 
 cbuffer cbShader : CB_SHADER
 {
-	float4x4	g_matTransformColor;
+	float4x4 g_matTransformColor;
 }
 
 Texture2D g_texSource : TEX_SOURCE;
 
-float4 main(in float2 i_uv : UV) : SV_Target
+float4 main(in float2 i_uv
+			: UV) : SV_Target
 {
 	return mul(g_texSource.Sample(g_ssTrilinearRepeat, i_uv), g_matTransformColor);
 }

@@ -41,8 +41,8 @@
 // ======================================================================================
 
 GFSDK_FaceWorks_Result ValidateSSSConfig(
-	const GFSDK_FaceWorks_SSSConfig * pConfig,
-	GFSDK_FaceWorks_ErrorBlob * pErrorBlobOut)
+	const GFSDK_FaceWorks_SSSConfig *pConfig,
+	GFSDK_FaceWorks_ErrorBlob *pErrorBlobOut)
 {
 	if (!pConfig)
 	{
@@ -121,9 +121,9 @@ GFSDK_FaceWorks_Result ValidateSSSConfig(
 }
 
 GFSDK_FACEWORKS_API GFSDK_FaceWorks_Result GFSDK_FACEWORKS_CALLCONV GFSDK_FaceWorks_WriteCBDataForSSS(
-	const GFSDK_FaceWorks_SSSConfig * pConfig,
-	GFSDK_FaceWorks_CBData * pCBDataOut,
-	GFSDK_FaceWorks_ErrorBlob * pErrorBlobOut)
+	const GFSDK_FaceWorks_SSSConfig *pConfig,
+	GFSDK_FaceWorks_CBData *pCBDataOut,
+	GFSDK_FaceWorks_ErrorBlob *pErrorBlobOut)
 {
 	// Validate params
 
@@ -141,7 +141,7 @@ GFSDK_FACEWORKS_API GFSDK_FaceWorks_Result GFSDK_FACEWORKS_CALLCONV GFSDK_FaceWo
 	// curvatures and penumbra widths need to be scaled to match the
 	// scattering radius set at runtime.
 	float diffusionRadiusFactor = pConfig->m_diffusionRadiusLUT /
-									pConfig->m_diffusionRadius;
+								  pConfig->m_diffusionRadius;
 
 	// Set up the constant buffer
 
@@ -156,9 +156,9 @@ GFSDK_FACEWORKS_API GFSDK_FaceWorks_Result GFSDK_FACEWORKS_CALLCONV GFSDK_FaceWo
 	float shadowBias = -shadowRcpWidthMin * shadowScale;
 
 	float minLevelForBlurredNormal = log2(max(
-										pConfig->m_normalMapSize * pConfig->m_diffusionRadius,
-										pConfig->m_averageUVScale)
-										/ pConfig->m_averageUVScale);
+											  pConfig->m_normalMapSize * pConfig->m_diffusionRadius,
+											  pConfig->m_averageUVScale) /
+										  pConfig->m_averageUVScale);
 
 	// Output to user buffer
 	pCBDataOut->data[0].x = curvatureScale;
@@ -170,15 +170,13 @@ GFSDK_FACEWORKS_API GFSDK_FaceWorks_Result GFSDK_FACEWORKS_CALLCONV GFSDK_FaceWo
 	return GFSDK_FaceWorks_OK;
 }
 
-
-
 // ======================================================================================
 //     Runtime API for deep scatter
 // ======================================================================================
 
 GFSDK_FaceWorks_Result ValidateDeepScatterConfig(
-	const GFSDK_FaceWorks_DeepScatterConfig * pConfig,
-	GFSDK_FaceWorks_ErrorBlob * pErrorBlobOut)
+	const GFSDK_FaceWorks_DeepScatterConfig *pConfig,
+	GFSDK_FaceWorks_ErrorBlob *pErrorBlobOut)
 {
 	if (!pConfig)
 	{
@@ -219,9 +217,9 @@ GFSDK_FaceWorks_Result ValidateDeepScatterConfig(
 }
 
 GFSDK_FACEWORKS_API GFSDK_FaceWorks_Result GFSDK_FACEWORKS_CALLCONV GFSDK_FaceWorks_WriteCBDataForDeepScatter(
-	const GFSDK_FaceWorks_DeepScatterConfig * pConfig,
-	GFSDK_FaceWorks_CBData * pCBDataOut,
-	GFSDK_FaceWorks_ErrorBlob * pErrorBlobOut)
+	const GFSDK_FaceWorks_DeepScatterConfig *pConfig,
+	GFSDK_FaceWorks_CBData *pCBDataOut,
+	GFSDK_FaceWorks_ErrorBlob *pErrorBlobOut)
 {
 	// Validate params
 
@@ -249,7 +247,7 @@ GFSDK_FACEWORKS_API GFSDK_FaceWorks_Result GFSDK_FACEWORKS_CALLCONV GFSDK_FaceWo
 	switch (pConfig->m_shadowProjType)
 	{
 	case GFSDK_FaceWorks_NoProjection:
-		break;	// Nothing to do
+		break; // Nothing to do
 
 	case GFSDK_FaceWorks_ParallelProjection:
 		decodeDepthScale = -1.0f / pConfig->m_shadowProjMatrix._33;

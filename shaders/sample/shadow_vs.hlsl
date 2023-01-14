@@ -42,12 +42,13 @@
 
 cbuffer cbShader : CB_SHADER
 {
-	float4x4	g_matWorldToClipShadow;
+	float4x4 g_matWorldToClipShadow;
 }
 
 void main(
 	in Vertex i_vtx,
-	out float4 o_posClip : SV_Position)
+	out float4 o_posClip
+	: SV_Position)
 {
 	o_posClip = mul(float4(i_vtx.m_pos, 1.0), g_matWorldToClipShadow);
 }

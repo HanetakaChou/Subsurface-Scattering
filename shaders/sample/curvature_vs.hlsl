@@ -36,13 +36,15 @@
 
 cbuffer cbShader : CB_SHADER
 {
-	float2		g_curvatureScaleBias;
+	float2 g_curvatureScaleBias;
 }
 
 void main(
 	in Vertex i_vtx,
-	out float o_color : COLOR,
-	out float4 o_posClip : SV_Position)
+	out float o_color
+	: COLOR,
+	  out float4 o_posClip
+	: SV_Position)
 {
 	o_color = sqrt(i_vtx.m_curvature * g_curvatureScaleBias.x + g_curvatureScaleBias.y);
 	o_posClip = mul(float4(i_vtx.m_pos, 1.0), g_matWorldToClip);

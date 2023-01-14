@@ -44,8 +44,6 @@
 #define WIN32_LEAN_AND_MEAN
 #include <windows.h>
 
-
-
 // Command-line processing
 
 void PrintUsage()
@@ -70,20 +68,19 @@ void PrintUsage()
 		" -shadowSharpening FLOAT       Shadow sharpening ratio; default is 10.0\n"
 		" -width INT                    LUT width in pixels; default is 512\n"
 		" -height INT                   LUT height in pixels; default is 512\n"
-		"\n"
-	);
+		"\n");
 }
 
 bool ReadInt(
-	const char ** argNameAndValue,
-	int * pValue,
+	const char **argNameAndValue,
+	int *pValue,
 	int minValid = INT_MIN,
 	int maxValid = INT_MAX)
 {
 	assert(minValid <= maxValid);
 
-	const char * argName = argNameAndValue[0];
-	const char * strValue = argNameAndValue[1];
+	const char *argName = argNameAndValue[0];
+	const char *strValue = argNameAndValue[1];
 
 	if (!strValue)
 	{
@@ -127,15 +124,15 @@ bool ReadInt(
 }
 
 bool ReadFloat(
-	const char ** argNameAndValue,
-	float * pValue,
+	const char **argNameAndValue,
+	float *pValue,
 	float minValid = -FLT_MAX,
 	float maxValid = FLT_MAX)
 {
 	assert(minValid <= maxValid);
 
-	const char * argName = argNameAndValue[0];
-	const char * strValue = argNameAndValue[1];
+	const char *argName = argNameAndValue[0];
+	const char *strValue = argNameAndValue[1];
 
 	if (!strValue)
 	{
@@ -178,36 +175,32 @@ bool ReadFloat(
 	return true;
 }
 
-
-
 int GenerateCurvatureLUT(
-	const GFSDK_FaceWorks_CurvatureLUTConfig * pConfig,
-	const char * strFilename);
+	const GFSDK_FaceWorks_CurvatureLUTConfig *pConfig,
+	const char *strFilename);
 
 int GenerateShadowLUT(
-	const GFSDK_FaceWorks_ShadowLUTConfig * pConfig,
-	const char * strFilename);
+	const GFSDK_FaceWorks_ShadowLUTConfig *pConfig,
+	const char *strFilename);
 
-
-
-int main(int argc, const char ** argv)
+int main(int argc, const char **argv)
 {
 	// Set default params
 	GFSDK_FaceWorks_CurvatureLUTConfig curvatureConfig =
-	{
-		2.7f,				// m_diffusionRadius
-		512, 512,			// m_texWidth, m_texHeight
-		1.0f, 100.0f,		// m_curvatureRadiusMin, m_curvatureRadiusMax
-	};
+		{
+			2.7f,		  // m_diffusionRadius
+			512, 512,	  // m_texWidth, m_texHeight
+			1.0f, 100.0f, // m_curvatureRadiusMin, m_curvatureRadiusMax
+		};
 	GFSDK_FaceWorks_ShadowLUTConfig shadowConfig =
-	{
-		2.7f,				// m_diffusionRadius
-		512, 512,			// m_texWidth, m_texHeight
-		8.0f, 100.0f,		// m_shadowWidthMin, m_shadowWidthMax
-		10.0f,				// m_shadowSharpening
-	};
-	const char * strCurvatureFilename = NULL;
-	const char * strShadowFilename = NULL;
+		{
+			2.7f,		  // m_diffusionRadius
+			512, 512,	  // m_texWidth, m_texHeight
+			8.0f, 100.0f, // m_shadowWidthMin, m_shadowWidthMax
+			10.0f,		  // m_shadowSharpening
+		};
+	const char *strCurvatureFilename = NULL;
+	const char *strShadowFilename = NULL;
 
 	// Parse command-line params
 	for (int iArg = 1; iArg < argc; ++iArg)
@@ -314,14 +307,12 @@ int main(int argc, const char ** argv)
 	return 0;
 }
 
-
-
 int WriteBMP(
 	int width, int height,
-	void * pPixelsRGBA,
-	const char * strFilename)
+	void *pPixelsRGBA,
+	const char *strFilename)
 {
-	FILE * pFile;
+	FILE *pFile;
 	if (fopen_s(&pFile, strFilename, "wb") != 0 || !pFile)
 	{
 		fprintf(stderr, "Error: couldn't open %s for writing\n", strFilename);
@@ -329,31 +320,33 @@ int WriteBMP(
 	}
 
 	BITMAPFILEHEADER bmpFileHeader =
-	{
-		0x4d42,
-		0, 0, 0,
-		sizeof(BITMAPFILEHEADER) + sizeof(BITMAPINFOHEADER),
-	};
+		{
+			0x4d42,
+			0,
+			0,
+			0,
+			sizeof(BITMAPFILEHEADER) + sizeof(BITMAPINFOHEADER),
+		};
 	fwrite(&bmpFileHeader, sizeof(bmpFileHeader), 1, pFile);
 
 	BITMAPINFOHEADER bmpInfoHeader =
-	{
-		sizeof(BITMAPINFOHEADER),
-		width, -height,		// negative height means top-down BMP
-		1,					// planes
-		24,					// bits per pixel
-	};
+		{
+			sizeof(BITMAPINFOHEADER),
+			width, -height, // negative height means top-down BMP
+			1,				// planes
+			24,				// bits per pixel
+		};
 	fwrite(&bmpInfoHeader, sizeof(bmpInfoHeader), 1, pFile);
 
 	// Convert RGBA to BGR pixel order
-	unsigned char * pRGBA = static_cast<unsigned char *>(pPixelsRGBA);
+	unsigned char *pRGBA = static_cast<unsigned char *>(pPixelsRGBA);
 	int pixelCount = width * height;
 	for (int i = 0; i < pixelCount; ++i)
 	{
 		unsigned char r = *(pRGBA++);
 		unsigned char g = *(pRGBA++);
 		unsigned char b = *(pRGBA++);
-		pRGBA++;	// skip alpha
+		pRGBA++; // skip alpha
 
 		fputc(b, pFile);
 		fputc(g, pFile);
@@ -366,11 +359,9 @@ int WriteBMP(
 	return 0;
 }
 
-
-
 int GenerateCurvatureLUT(
-	const GFSDK_FaceWorks_CurvatureLUTConfig * pConfig,
-	const char * strFilename)
+	const GFSDK_FaceWorks_CurvatureLUTConfig *pConfig,
+	const char *strFilename)
 {
 	printf("Generating curvature LUT...\n");
 	clock_t start = clock();
@@ -391,17 +382,15 @@ int GenerateCurvatureLUT(
 	printf("Done in %0.3f seconds\n", float(clocks) / float(CLOCKS_PER_SEC));
 
 	return WriteBMP(
-			pConfig->m_texWidth,
-			pConfig->m_texHeight,
-			&pixels[0],
-			strFilename);
+		pConfig->m_texWidth,
+		pConfig->m_texHeight,
+		&pixels[0],
+		strFilename);
 }
 
-
-
 int GenerateShadowLUT(
-	const GFSDK_FaceWorks_ShadowLUTConfig * pConfig,
-	const char * strFilename)
+	const GFSDK_FaceWorks_ShadowLUTConfig *pConfig,
+	const char *strFilename)
 {
 	printf("Generating shadow LUT...\n");
 	clock_t start = clock();
@@ -422,8 +411,8 @@ int GenerateShadowLUT(
 	printf("Done in %0.3f seconds\n", float(clocks) / float(CLOCKS_PER_SEC));
 
 	return WriteBMP(
-			pConfig->m_texWidth,
-			pConfig->m_texHeight,
-			&pixels[0],
-			strFilename);
+		pConfig->m_texWidth,
+		pConfig->m_texHeight,
+		&pixels[0],
+		strFilename);
 }

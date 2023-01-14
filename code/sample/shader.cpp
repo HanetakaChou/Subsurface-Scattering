@@ -32,7 +32,6 @@
 //
 //----------------------------------------------------------------------------------
 
-
 #include "shader.h"
 #include "util.h"
 #include "shaders/resources.h"
@@ -57,51 +56,47 @@
 #include "thickness_ps.h"
 #include "world_vs.h"
 
-
-
 // Constant buffer size must be a multiple of 16 bytes
 inline unsigned int align16(unsigned int size)
 {
 	return ((size + 15) / 16) * 16;
 }
 
-
-
 // CShaderManager implementation
 
 CShaderManager g_shdmgr;
 
 CShaderManager::CShaderManager()
-:	m_pPsCopy(nullptr),
-	m_pPsCreateVSM(nullptr),
-	m_pVsCurvature(nullptr),
-	m_pPsCurvature(nullptr),
-	m_pPsThickness(nullptr),
-	m_pPsGaussian(nullptr),
-	m_pPsHair(nullptr),
-	m_pVsScreen(nullptr),
-	m_pVsShadow(nullptr),
-	m_pVsSkybox(nullptr),
-	m_pPsSkybox(nullptr),
-	m_pVsTess(nullptr),
-	m_pHsTess(nullptr),
-	m_pDsTess(nullptr),
-	m_pVsWorld(nullptr),
-	m_pSsPointClamp(nullptr),
-	m_pSsBilinearClamp(nullptr),
-	m_pSsTrilinearRepeat(nullptr),
-	m_pSsTrilinearRepeatAniso(nullptr),
-	m_pSsPCF(nullptr),
-	m_pInputLayout(nullptr),
-	m_pCbufDebug(nullptr),
-	m_pCbufFrame(nullptr),
-	m_pCbufShader(nullptr),
-	m_mapSkinFeaturesToShader(),
-	m_mapEyeFeaturesToShader()
+	: m_pPsCopy(nullptr),
+	  m_pPsCreateVSM(nullptr),
+	  m_pVsCurvature(nullptr),
+	  m_pPsCurvature(nullptr),
+	  m_pPsThickness(nullptr),
+	  m_pPsGaussian(nullptr),
+	  m_pPsHair(nullptr),
+	  m_pVsScreen(nullptr),
+	  m_pVsShadow(nullptr),
+	  m_pVsSkybox(nullptr),
+	  m_pPsSkybox(nullptr),
+	  m_pVsTess(nullptr),
+	  m_pHsTess(nullptr),
+	  m_pDsTess(nullptr),
+	  m_pVsWorld(nullptr),
+	  m_pSsPointClamp(nullptr),
+	  m_pSsBilinearClamp(nullptr),
+	  m_pSsTrilinearRepeat(nullptr),
+	  m_pSsTrilinearRepeatAniso(nullptr),
+	  m_pSsPCF(nullptr),
+	  m_pInputLayout(nullptr),
+	  m_pCbufDebug(nullptr),
+	  m_pCbufFrame(nullptr),
+	  m_pCbufShader(nullptr),
+	  m_mapSkinFeaturesToShader(),
+	  m_mapEyeFeaturesToShader()
 {
 }
 
-HRESULT CShaderManager::Init(ID3D11Device * pDevice)
+HRESULT CShaderManager::Init(ID3D11Device *pDevice)
 {
 	HRESULT hr;
 
@@ -125,29 +120,29 @@ HRESULT CShaderManager::Init(ID3D11Device * pDevice)
 	// Initialize the sampler states
 
 	D3D11_SAMPLER_DESC sampDesc =
-	{
-		D3D11_FILTER_MIN_MAG_MIP_POINT,
-		D3D11_TEXTURE_ADDRESS_CLAMP,
-		D3D11_TEXTURE_ADDRESS_CLAMP,
-		D3D11_TEXTURE_ADDRESS_CLAMP,
-		0.0f,
-		1,
-		D3D11_COMPARISON_FUNC(0),
-		{ 0.0f, 0.0f, 0.0f, 0.0f },
-		0.0f,
-		FLT_MAX,
-	};
+		{
+			D3D11_FILTER_MIN_MAG_MIP_POINT,
+			D3D11_TEXTURE_ADDRESS_CLAMP,
+			D3D11_TEXTURE_ADDRESS_CLAMP,
+			D3D11_TEXTURE_ADDRESS_CLAMP,
+			0.0f,
+			1,
+			D3D11_COMPARISON_FUNC(0),
+			{0.0f, 0.0f, 0.0f, 0.0f},
+			0.0f,
+			FLT_MAX,
+		};
 	V_RETURN(pDevice->CreateSamplerState(&sampDesc, &m_pSsPointClamp));
 
 	sampDesc.Filter = D3D11_FILTER_MIN_MAG_LINEAR_MIP_POINT;
 	V_RETURN(pDevice->CreateSamplerState(&sampDesc, &m_pSsBilinearClamp));
-	
+
 	sampDesc.Filter = D3D11_FILTER_MIN_MAG_MIP_LINEAR;
 	sampDesc.AddressU = D3D11_TEXTURE_ADDRESS_WRAP;
 	sampDesc.AddressV = D3D11_TEXTURE_ADDRESS_WRAP;
 	sampDesc.AddressW = D3D11_TEXTURE_ADDRESS_WRAP;
 	V_RETURN(pDevice->CreateSamplerState(&sampDesc, &m_pSsTrilinearRepeat));
-	
+
 	sampDesc.Filter = D3D11_FILTER_ANISOTROPIC;
 	sampDesc.MaxAnisotropy = 16;
 	V_RETURN(pDevice->CreateSamplerState(&sampDesc, &m_pSsTrilinearRepeatAniso));
@@ -167,18 +162,18 @@ HRESULT CShaderManager::Init(ID3D11Device * pDevice)
 	// Initialize the input layout, and validate it against all the vertex shaders
 
 	D3D11_INPUT_ELEMENT_DESC aInputDescs[] =
-	{
-		{ "POSITION", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, UINT(offsetof(Vertex, m_pos)), D3D11_INPUT_PER_VERTEX_DATA, 0 },
-		{ "NORMAL", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, UINT(offsetof(Vertex, m_normal)), D3D11_INPUT_PER_VERTEX_DATA, 0 },
-		{ "UV", 0, DXGI_FORMAT_R32G32_FLOAT, 0, UINT(offsetof(Vertex, m_uv)), D3D11_INPUT_PER_VERTEX_DATA, 0 },
-		{ "TANGENT", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, UINT(offsetof(Vertex, m_tangent)), D3D11_INPUT_PER_VERTEX_DATA, 0 },
-		{ "CURVATURE", 0, DXGI_FORMAT_R32_FLOAT, 0, UINT(offsetof(Vertex, m_curvature)), D3D11_INPUT_PER_VERTEX_DATA, 0 },
-	};
+		{
+			{"POSITION", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, UINT(offsetof(Vertex, m_pos)), D3D11_INPUT_PER_VERTEX_DATA, 0},
+			{"NORMAL", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, UINT(offsetof(Vertex, m_normal)), D3D11_INPUT_PER_VERTEX_DATA, 0},
+			{"UV", 0, DXGI_FORMAT_R32G32_FLOAT, 0, UINT(offsetof(Vertex, m_uv)), D3D11_INPUT_PER_VERTEX_DATA, 0},
+			{"TANGENT", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, UINT(offsetof(Vertex, m_tangent)), D3D11_INPUT_PER_VERTEX_DATA, 0},
+			{"CURVATURE", 0, DXGI_FORMAT_R32_FLOAT, 0, UINT(offsetof(Vertex, m_curvature)), D3D11_INPUT_PER_VERTEX_DATA, 0},
+		};
 
 	V_RETURN(pDevice->CreateInputLayout(
-						aInputDescs, dim(aInputDescs),
-						curvature_vs_bytecode, dim(curvature_vs_bytecode),
-						&m_pInputLayout));
+		aInputDescs, dim(aInputDescs),
+		curvature_vs_bytecode, dim(curvature_vs_bytecode),
+		&m_pInputLayout));
 
 	// Note: calling CreateInputLayout with nullptr for the 5th parameter will crash
 	// the VS2012 graphics debugger.  Turn on this define if you need to graphics-debug.
@@ -187,36 +182,36 @@ HRESULT CShaderManager::Init(ID3D11Device * pDevice)
 #define VS_GRAPHICS_DEBUG 0
 #if !VS_GRAPHICS_DEBUG
 	V_RETURN(pDevice->CreateInputLayout(
-						aInputDescs, dim(aInputDescs),
-						screen_vs_bytecode, dim(screen_vs_bytecode),
-						nullptr));
+		aInputDescs, dim(aInputDescs),
+		screen_vs_bytecode, dim(screen_vs_bytecode),
+		nullptr));
 	V_RETURN(pDevice->CreateInputLayout(
-						aInputDescs, dim(aInputDescs),
-						shadow_vs_bytecode, dim(shadow_vs_bytecode),
-						nullptr));
+		aInputDescs, dim(aInputDescs),
+		shadow_vs_bytecode, dim(shadow_vs_bytecode),
+		nullptr));
 	V_RETURN(pDevice->CreateInputLayout(
-						aInputDescs, dim(aInputDescs),
-						skybox_vs_bytecode, dim(skybox_vs_bytecode),
-						nullptr));
+		aInputDescs, dim(aInputDescs),
+		skybox_vs_bytecode, dim(skybox_vs_bytecode),
+		nullptr));
 	V_RETURN(pDevice->CreateInputLayout(
-						aInputDescs, dim(aInputDescs),
-						tess_vs_bytecode, dim(tess_vs_bytecode),
-						nullptr));
+		aInputDescs, dim(aInputDescs),
+		tess_vs_bytecode, dim(tess_vs_bytecode),
+		nullptr));
 	V_RETURN(pDevice->CreateInputLayout(
-						aInputDescs, dim(aInputDescs),
-						world_vs_bytecode, dim(world_vs_bytecode),
-						nullptr));
+		aInputDescs, dim(aInputDescs),
+		world_vs_bytecode, dim(world_vs_bytecode),
+		nullptr));
 #endif // !VS_GRAPHICS_DEBUG
 
 	// Initialize the constant buffers
 
 	D3D11_BUFFER_DESC bufDesc =
-	{
-		align16(sizeof(CbufDebug)),
-		D3D11_USAGE_DYNAMIC,
-		D3D11_BIND_CONSTANT_BUFFER,
-		D3D11_CPU_ACCESS_WRITE,
-	};
+		{
+			align16(sizeof(CbufDebug)),
+			D3D11_USAGE_DYNAMIC,
+			D3D11_BIND_CONSTANT_BUFFER,
+			D3D11_CPU_ACCESS_WRITE,
+		};
 
 	V_RETURN(pDevice->CreateBuffer(&bufDesc, nullptr, &m_pCbufDebug));
 
@@ -230,13 +225,13 @@ HRESULT CShaderManager::Init(ID3D11Device * pDevice)
 }
 
 void CShaderManager::InitFrame(
-	ID3D11DeviceContext * pCtx,
-	const CbufDebug * pCbufDebug,
-	const CbufFrame * pCbufFrame,
-	ID3D11ShaderResourceView * pSrvCubeDiffuse,
-	ID3D11ShaderResourceView * pSrvCubeSpec,
-	ID3D11ShaderResourceView * pSrvCurvatureLUT,
-	ID3D11ShaderResourceView * pSrvShadowLUT)
+	ID3D11DeviceContext *pCtx,
+	const CbufDebug *pCbufDebug,
+	const CbufFrame *pCbufFrame,
+	ID3D11ShaderResourceView *pSrvCubeDiffuse,
+	ID3D11ShaderResourceView *pSrvCubeSpec,
+	ID3D11ShaderResourceView *pSrvCurvatureLUT,
+	ID3D11ShaderResourceView *pSrvShadowLUT)
 {
 	HRESULT hr;
 
@@ -284,15 +279,13 @@ void CShaderManager::InitFrame(
 }
 
 void CShaderManager::BindShadowTextures(
-	ID3D11DeviceContext * pCtx,
-	ID3D11ShaderResourceView * pSrvShadowMap,
-	ID3D11ShaderResourceView * pSrvVSM)
+	ID3D11DeviceContext *pCtx,
+	ID3D11ShaderResourceView *pSrvShadowMap,
+	ID3D11ShaderResourceView *pSrvVSM)
 {
 	pCtx->PSSetShaderResources(TEX_SHADOW_MAP, 1, &pSrvShadowMap);
 	pCtx->PSSetShaderResources(TEX_VSM, 1, &pSrvVSM);
 }
-
-
 
 // Include helper class for D3DCompile API
 struct IncludeHelper : public ID3DInclude
@@ -301,8 +294,8 @@ struct IncludeHelper : public ID3DInclude
 	{
 	}
 
-	std::wstring						m_dirsToTry[2];
-	std::vector<std::vector<char> >		m_openFiles;
+	std::wstring m_dirsToTry[2];
+	std::vector<std::vector<char>> m_openFiles;
 
 	IncludeHelper()
 	{
@@ -312,7 +305,7 @@ struct IncludeHelper : public ID3DInclude
 		GetModuleFileNameW(hModule, path, MAX_PATH);
 
 		// Trim off the .exe filename, leaving just the directory
-		wchar_t * pBasename = wcsrchr(path, L'\\');
+		wchar_t *pBasename = wcsrchr(path, L'\\');
 		if (pBasename)
 			++pBasename;
 		else
@@ -327,11 +320,11 @@ struct IncludeHelper : public ID3DInclude
 	}
 
 	virtual HRESULT __stdcall Open(
-								D3D_INCLUDE_TYPE /*IncludeType*/,
-								LPCSTR pFileName,
-								LPCVOID /*pParentData*/,
-								LPCVOID * ppDataOut,
-								UINT * pBytesOut) override
+		D3D_INCLUDE_TYPE /*IncludeType*/,
+		LPCSTR pFileName,
+		LPCVOID /*pParentData*/,
+		LPCVOID *ppDataOut,
+		UINT *pBytesOut) override
 	{
 		assert(pFileName);
 		assert(ppDataOut);
@@ -378,9 +371,9 @@ struct IncludeHelper : public ID3DInclude
 };
 
 bool CShaderManager::CompileShader(
-	ID3D11Device * pDevice,
-	const char * source,
-	ID3D11PixelShader ** ppPsOut)
+	ID3D11Device *pDevice,
+	const char *source,
+	ID3D11PixelShader **ppPsOut)
 {
 	// Compile the source
 
@@ -389,16 +382,16 @@ bool CShaderManager::CompileShader(
 	flags |= D3DCOMPILE_SKIP_OPTIMIZATION | D3DCOMPILE_DEBUG | D3DCOMPILE_PREFER_FLOW_CONTROL;
 #endif
 
-	ID3DBlob * pBlobCode = nullptr;
-	ID3DBlob * pBlobErrors = nullptr;
+	ID3DBlob *pBlobCode = nullptr;
+	ID3DBlob *pBlobErrors = nullptr;
 
 	IncludeHelper includeHelper;
 	HRESULT hr = D3DCompile(
-					source, strlen(source), "generated_ps",
-					nullptr, &includeHelper,
-					"main", "ps_5_0",
-					flags, 0,
-					&pBlobCode, &pBlobErrors);
+		source, strlen(source), "generated_ps",
+		nullptr, &includeHelper,
+		"main", "ps_5_0",
+		flags, 0,
+		&pBlobCode, &pBlobErrors);
 	if (pBlobErrors)
 	{
 		MessageBoxA(
@@ -423,8 +416,8 @@ bool CShaderManager::CompileShader(
 
 	// Create the shader on the device
 	if (FAILED(pDevice->CreatePixelShader(
-							pBlobCode->GetBufferPointer(), pBlobCode->GetBufferSize(),
-							nullptr, ppPsOut)))
+			pBlobCode->GetBufferPointer(), pBlobCode->GetBufferSize(),
+			nullptr, ppPsOut)))
 	{
 		MessageBox(
 			DXUTGetHWND(),
@@ -438,7 +431,7 @@ bool CShaderManager::CompileShader(
 	return true;
 }
 
-void CShaderManager::CreateSkinShader(ID3D11Device * pDevice, SHDFEATURES features)
+void CShaderManager::CreateSkinShader(ID3D11Device *pDevice, SHDFEATURES features)
 {
 	DebugPrintf(L"Generating skin shader with feature mask %d\n", features);
 
@@ -458,11 +451,10 @@ void CShaderManager::CreateSkinShader(ID3D11Device * pDevice, SHDFEATURES featur
 		"	SkinMegashader(i_vtx, i_vecCamera, i_uvzwShadow, o_rgbLit, %s, %s);\n"
 		"}\n",
 		(features & SHDFEAT_SSS) ? "true" : "false",
-		(features & SHDFEAT_DeepScatter) ? "true" : "false"
-	);
+		(features & SHDFEAT_DeepScatter) ? "true" : "false");
 
 	// Compile it
-	ID3D11PixelShader * pPs = nullptr;
+	ID3D11PixelShader *pPs = nullptr;
 	if (!CompileShader(pDevice, source, &pPs))
 		return;
 
@@ -471,7 +463,7 @@ void CShaderManager::CreateSkinShader(ID3D11Device * pDevice, SHDFEATURES featur
 	m_mapSkinFeaturesToShader[features] = pPs;
 }
 
-void CShaderManager::CreateEyeShader(ID3D11Device * pDevice, SHDFEATURES features)
+void CShaderManager::CreateEyeShader(ID3D11Device *pDevice, SHDFEATURES features)
 {
 	DebugPrintf(L"Generating eye shader with feature mask %d\n", features);
 
@@ -491,11 +483,10 @@ void CShaderManager::CreateEyeShader(ID3D11Device * pDevice, SHDFEATURES feature
 		"	EyeMegashader(i_vtx, i_vecCamera, i_uvzwShadow, o_rgbLit, %s, %s);\n"
 		"}\n",
 		(features & SHDFEAT_SSS) ? "true" : "false",
-		(features & SHDFEAT_DeepScatter) ? "true" : "false"
-	);
+		(features & SHDFEAT_DeepScatter) ? "true" : "false");
 
 	// Compile it
-	ID3D11PixelShader * pPs = nullptr;
+	ID3D11PixelShader *pPs = nullptr;
 	if (!CompileShader(pDevice, source, &pPs))
 		return;
 
@@ -504,7 +495,7 @@ void CShaderManager::CreateEyeShader(ID3D11Device * pDevice, SHDFEATURES feature
 	m_mapEyeFeaturesToShader[features] = pPs;
 }
 
-ID3D11PixelShader * CShaderManager::GetSkinShader(ID3D11Device * pDevice, SHDFEATURES features)
+ID3D11PixelShader *CShaderManager::GetSkinShader(ID3D11Device *pDevice, SHDFEATURES features)
 {
 	features &= SHDFEAT_PSMask;
 
@@ -520,7 +511,7 @@ ID3D11PixelShader * CShaderManager::GetSkinShader(ID3D11Device * pDevice, SHDFEA
 	return m_mapSkinFeaturesToShader[features];
 }
 
-ID3D11PixelShader * CShaderManager::GetEyeShader(ID3D11Device * pDevice, SHDFEATURES features)
+ID3D11PixelShader *CShaderManager::GetEyeShader(ID3D11Device *pDevice, SHDFEATURES features)
 {
 	features &= SHDFEAT_PSMask;
 
@@ -536,12 +527,10 @@ ID3D11PixelShader * CShaderManager::GetEyeShader(ID3D11Device * pDevice, SHDFEAT
 	return m_mapEyeFeaturesToShader[features];
 }
 
-
-
 void CShaderManager::BindCopy(
-	ID3D11DeviceContext * pCtx,
-	ID3D11ShaderResourceView * pSrvSrc,
-	const DirectX::XMFLOAT4X4 & matTransformColor)
+	ID3D11DeviceContext *pCtx,
+	ID3D11ShaderResourceView *pSrvSrc,
+	const DirectX::XMFLOAT4X4 &matTransformColor)
 {
 	pCtx->VSSetShader(m_pVsScreen, nullptr, 0);
 	pCtx->PSSetShader(m_pPsCopy, nullptr, 0);
@@ -556,8 +545,8 @@ void CShaderManager::BindCopy(
 }
 
 void CShaderManager::BindCreateVSM(
-	ID3D11DeviceContext * pCtx,
-	ID3D11ShaderResourceView * pSrvSrc)
+	ID3D11DeviceContext *pCtx,
+	ID3D11ShaderResourceView *pSrvSrc)
 {
 	pCtx->VSSetShader(m_pVsScreen, nullptr, 0);
 	pCtx->PSSetShader(m_pPsCreateVSM, nullptr, 0);
@@ -565,7 +554,7 @@ void CShaderManager::BindCreateVSM(
 }
 
 void CShaderManager::BindCurvature(
-	ID3D11DeviceContext * pCtx,
+	ID3D11DeviceContext *pCtx,
 	float curvatureScale,
 	float curvatureBias)
 {
@@ -582,8 +571,8 @@ void CShaderManager::BindCurvature(
 }
 
 void CShaderManager::BindThickness(
-	ID3D11DeviceContext * pCtx,
-	GFSDK_FaceWorks_CBData * pFaceWorksCBData)
+	ID3D11DeviceContext *pCtx,
+	GFSDK_FaceWorks_CBData *pFaceWorksCBData)
 {
 	pCtx->VSSetShader(m_pVsWorld, nullptr, 0);
 	pCtx->PSSetShader(m_pPsThickness, nullptr, 0);
@@ -597,8 +586,8 @@ void CShaderManager::BindThickness(
 }
 
 void CShaderManager::BindGaussian(
-	ID3D11DeviceContext * pCtx,
-	ID3D11ShaderResourceView * pSrvSrc,
+	ID3D11DeviceContext *pCtx,
+	ID3D11ShaderResourceView *pSrvSrc,
 	float blurX,
 	float blurY)
 {
@@ -616,8 +605,8 @@ void CShaderManager::BindGaussian(
 }
 
 void CShaderManager::BindShadow(
-	ID3D11DeviceContext * pCtx,
-	const DirectX::XMFLOAT4X4 & matWorldToClipShadow)
+	ID3D11DeviceContext *pCtx,
+	const DirectX::XMFLOAT4X4 &matWorldToClipShadow)
 {
 	pCtx->VSSetShader(m_pVsShadow, nullptr, 0);
 	pCtx->PSSetShader(nullptr, nullptr, 0);
@@ -631,9 +620,9 @@ void CShaderManager::BindShadow(
 }
 
 void CShaderManager::BindSkybox(
-	ID3D11DeviceContext * pCtx,
-	ID3D11ShaderResourceView * pSrvSkybox,
-	const DirectX::XMFLOAT4X4 & matClipToWorldAxes)
+	ID3D11DeviceContext *pCtx,
+	ID3D11ShaderResourceView *pSrvSkybox,
+	const DirectX::XMFLOAT4X4 &matClipToWorldAxes)
 {
 	pCtx->VSSetShader(m_pVsSkybox, nullptr, 0);
 	pCtx->PSSetShader(m_pPsSkybox, nullptr, 0);
@@ -648,25 +637,31 @@ void CShaderManager::BindSkybox(
 }
 
 void CShaderManager::BindMaterial(
-	ID3D11DeviceContext * pCtx,
+	ID3D11DeviceContext *pCtx,
 	SHDFEATURES features,
-	const Material * pMtl)
+	const Material *pMtl)
 {
-	ID3D11Device * pDevice;
+	ID3D11Device *pDevice;
 	pCtx->GetDevice(&pDevice);
 
 	// Determine which pixel shader to use
-	ID3D11PixelShader * pPs;
+	ID3D11PixelShader *pPs;
 	switch (pMtl->m_shader)
 	{
-	case SHADER_Skin:	pPs = GetSkinShader(pDevice, features); break;
-	case SHADER_Eye:	pPs = GetEyeShader(pDevice, features); break;
-	case SHADER_Hair:	pPs = m_pPsHair; break;
+	case SHADER_Skin:
+		pPs = GetSkinShader(pDevice, features);
+		break;
+	case SHADER_Eye:
+		pPs = GetEyeShader(pDevice, features);
+		break;
+	case SHADER_Hair:
+		pPs = m_pPsHair;
+		break;
 	default:
 		assert(false);
 		return;
 	}
-	
+
 	pDevice->Release();
 	assert(pPs);
 
@@ -700,18 +695,18 @@ void CShaderManager::BindMaterial(
 	pCtx->Unmap(m_pCbufShader, 0);
 }
 
-void CShaderManager::UnbindTess(ID3D11DeviceContext * pCtx)
+void CShaderManager::UnbindTess(ID3D11DeviceContext *pCtx)
 {
 	pCtx->HSSetShader(nullptr, nullptr, 0);
 	pCtx->DSSetShader(nullptr, nullptr, 0);
 	pCtx->IASetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
 }
 
-
 void CShaderManager::DiscardRuntimeCompiledShaders()
 {
 	for (std::unordered_map<SHDFEATURES, ID3D11PixelShader *>::iterator
-			i = m_mapSkinFeaturesToShader.begin(), end = m_mapSkinFeaturesToShader.end();
+			 i = m_mapSkinFeaturesToShader.begin(),
+			 end = m_mapSkinFeaturesToShader.end();
 		 i != end;
 		 ++i)
 	{
@@ -721,7 +716,8 @@ void CShaderManager::DiscardRuntimeCompiledShaders()
 	m_mapSkinFeaturesToShader.clear();
 
 	for (std::unordered_map<SHDFEATURES, ID3D11PixelShader *>::iterator
-			i = m_mapEyeFeaturesToShader.begin(), end = m_mapEyeFeaturesToShader.end();
+			 i = m_mapEyeFeaturesToShader.begin(),
+			 end = m_mapEyeFeaturesToShader.end();
 		 i != end;
 		 ++i)
 	{

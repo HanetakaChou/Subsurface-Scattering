@@ -37,9 +37,12 @@
 void main(
 	in Vertex i_vtx,
 	out Vertex o_vtx,
-	out float3 o_vecCamera : CAMERA,
-	out float4 o_uvzwShadow : UVZW_SHADOW,
-	out float4 o_posClip : SV_Position)
+	out float3 o_vecCamera
+	: CAMERA,
+	  out float4 o_uvzwShadow
+	: UVZW_SHADOW,
+	  out float4 o_posClip
+	: SV_Position)
 {
 	o_vtx = i_vtx;
 	o_vecCamera = g_posCamera - i_vtx.m_pos;

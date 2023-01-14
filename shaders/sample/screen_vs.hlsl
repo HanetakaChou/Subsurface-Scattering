@@ -32,13 +32,14 @@
 //
 //----------------------------------------------------------------------------------
 
-
 #include "common.hlsli"
 
 void main(
 	in Vertex i_vtx,
-	out float2 o_uv : UV,
-	out float4 o_posClip : SV_Position)
+	out float2 o_uv
+	: UV,
+	  out float4 o_posClip
+	: SV_Position)
 {
 	o_posClip = float4(i_vtx.m_pos.xy, 0.0, 1.0);
 	o_uv = i_vtx.m_uv;

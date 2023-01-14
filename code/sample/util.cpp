@@ -47,13 +47,13 @@
 #include <GFSDK_FaceWorks.h>
 
 #if defined(_MSC_VER) && (_MSC_VER < 1900)
-#pragma warning(disable: 4351)	// Before VS2015 the warning "New behavior: array elements will be default-initialized" is produced when an array is construct-initialized with ().
+#pragma warning(disable : 4351) // Before VS2015 the warning "New behavior: array elements will be default-initialized" is produced when an array is construct-initialized with ().
 #endif
 
 using namespace std;
 using namespace DirectX;
 
-static wstring StrVprintf(const wchar_t * fmt, va_list args)
+static wstring StrVprintf(const wchar_t *fmt, va_list args)
 {
 	int cChAlloc = _vscwprintf(fmt, args) + 1;
 	wstring result = wstring(cChAlloc, L'\0');
@@ -61,7 +61,7 @@ static wstring StrVprintf(const wchar_t * fmt, va_list args)
 	return result;
 }
 
-wstring StrPrintf(const wchar_t * fmt, ...)
+wstring StrPrintf(const wchar_t *fmt, ...)
 {
 	va_list args;
 	va_start(args, fmt);
@@ -69,19 +69,21 @@ wstring StrPrintf(const wchar_t * fmt, ...)
 }
 
 #if defined(_DEBUG)
-void DebugPrintf(const wchar_t * fmt, ...)
+void DebugPrintf(const wchar_t *fmt, ...)
 {
 	va_list args;
 	va_start(args, fmt);
 	OutputDebugString(StrVprintf(fmt, args).c_str());
 }
 #else
-void DebugPrintf(const wchar_t * /*fmt*/, ...) {}
+void DebugPrintf(const wchar_t * /*fmt*/, ...)
+{
+}
 #endif
 
-HRESULT LoadFile(const wchar_t * strFilename, vector<char> * pData, bool bText)
+HRESULT LoadFile(const wchar_t *strFilename, vector<char> *pData, bool bText)
 {
-	FILE * pFile = nullptr;
+	FILE *pFile = nullptr;
 	if (_wfopen_s(&pFile, strFilename, bText ? L"rt" : L"rb") != 0 || !pFile)
 		return E_FAIL;
 	assert(pFile);
@@ -92,7 +94,7 @@ HRESULT LoadFile(const wchar_t * strFilename, vector<char> * pData, bool bText)
 
 	// Read the whole file into memory
 	assert(pData);
-	pData->resize(bText ? size+1 : size);
+	pData->resize(bText ? size + 1 : size);
 	rewind(pFile);
 	size_t sizeRead = fread(&(*pData)[0], sizeof(char), size, pFile);
 
@@ -110,24 +112,22 @@ HRESULT LoadFile(const wchar_t * strFilename, vector<char> * pData, bool bText)
 	return S_OK;
 }
 
-
-
-const wchar_t * BaseFilename(const wchar_t * strFilename)
+const wchar_t *BaseFilename(const wchar_t *strFilename)
 {
-	if (const wchar_t * strBase = wcsrchr(strFilename, L'\\'))
+	if (const wchar_t *strBase = wcsrchr(strFilename, L'\\'))
 		return strBase + 1;
 	else
 		return strFilename;
 }
 
 #if defined(_DEBUG)
-void SetDebugName(ID3D11DeviceChild * pD3DObject, const char * strName)
+void SetDebugName(ID3D11DeviceChild *pD3DObject, const char *strName)
 {
 	HRESULT hr = pD3DObject->SetPrivateData(WKPDID_D3DDebugObjectName, UINT(strlen(strName)), strName);
 	assert(SUCCEEDED(hr));
 }
 
-void SetDebugName(ID3D11DeviceChild * pD3DObject, const wchar_t * strName)
+void SetDebugName(ID3D11DeviceChild *pD3DObject, const wchar_t *strName)
 {
 	// D3D only supports narrow strings for debug names; convert to UTF-8
 	int cCh = WideCharToMultiByte(CP_UTF8, 0, strName, -1, nullptr, 0, nullptr, nullptr);
@@ -137,29 +137,31 @@ void SetDebugName(ID3D11DeviceChild * pD3DObject, const wchar_t * strName)
 	assert(SUCCEEDED(hr));
 }
 #else
-void SetDebugName(ID3D11DeviceChild * /*pD3DObject*/, const char * /*strName*/) {}
+void SetDebugName(ID3D11DeviceChild * /*pD3DObject*/, const char * /*strName*/)
+{
+}
 void SetDebugName(ID3D11DeviceChild * /*pD3DObject*/, const wchar_t * /*strName*/) {}
 #endif
 
 // CMesh implementation
 
 CMesh::CMesh()
-:	m_verts(),
-	m_indices(),
-	m_pVtxBuffer(nullptr),
-	m_pIdxBuffer(nullptr),
-	m_vtxStride(0),
-	m_cIdx(0),
-	m_primtopo(D3D11_PRIMITIVE_TOPOLOGY_UNDEFINED),
-	m_posMin(0.0f, 0.0f, 0.0f),
-	m_posMax(0.0f, 0.0f, 0.0f),
-	m_posCenter(0.0f, 0.0f, 0.0f),
-	m_diameter(0.0f),
-	m_uvScale(1.0f)
+	: m_verts(),
+	  m_indices(),
+	  m_pVtxBuffer(nullptr),
+	  m_pIdxBuffer(nullptr),
+	  m_vtxStride(0),
+	  m_cIdx(0),
+	  m_primtopo(D3D11_PRIMITIVE_TOPOLOGY_UNDEFINED),
+	  m_posMin(0.0f, 0.0f, 0.0f),
+	  m_posMax(0.0f, 0.0f, 0.0f),
+	  m_posCenter(0.0f, 0.0f, 0.0f),
+	  m_diameter(0.0f),
+	  m_uvScale(1.0f)
 {
 }
 
-void CMesh::Draw(ID3D11DeviceContext * pCtx)
+void CMesh::Draw(ID3D11DeviceContext *pCtx)
 {
 	UINT zero = 0;
 	pCtx->IASetVertexBuffers(0, 1, &m_pVtxBuffer, &m_vtxStride, &zero);
@@ -175,48 +177,48 @@ void CMesh::Release()
 	SAFE_RELEASE(m_pIdxBuffer);
 }
 
-HRESULT CreateFullscreenMesh(ID3D11Device * pDevice, CMesh * pMesh)
+HRESULT CreateFullscreenMesh(ID3D11Device *pDevice, CMesh *pMesh)
 {
 	HRESULT hr;
 
 	// Positions are directly in clip space; normals aren't used.
 
 	Vertex verts[] =
-	{
-		// pos                    normal         uv
-		{ XMFLOAT3(-1, -1, 0), XMFLOAT3(), XMFLOAT2(0,  1) },
-		{ XMFLOAT3( 3, -1, 0), XMFLOAT3(), XMFLOAT2(2,  1) },
-		{ XMFLOAT3(-1,  3, 0), XMFLOAT3(), XMFLOAT2(0, -1) },
-	};
+		{
+			// pos                    normal         uv
+			{XMFLOAT3(-1, -1, 0), XMFLOAT3(), XMFLOAT2(0, 1)},
+			{XMFLOAT3(3, -1, 0), XMFLOAT3(), XMFLOAT2(2, 1)},
+			{XMFLOAT3(-1, 3, 0), XMFLOAT3(), XMFLOAT2(0, -1)},
+		};
 
-	UINT indices[] = { 0, 1, 2 };
+	UINT indices[] = {0, 1, 2};
 
 	pMesh->m_verts.assign(&verts[0], &verts[dim(verts)]);
 	pMesh->m_indices.assign(&indices[0], &indices[dim(indices)]);
 
 	D3D11_BUFFER_DESC vtxBufferDesc =
-	{
-		sizeof(Vertex) * dim(verts),
-		D3D11_USAGE_IMMUTABLE,
-		D3D11_BIND_VERTEX_BUFFER,
-		0,	// no cpu access
-		0,	// no misc flags
-		0,	// structured buffer stride
-	};
-	D3D11_SUBRESOURCE_DATA vtxBufferData = { &verts[0], 0, 0 };
+		{
+			sizeof(Vertex) * dim(verts),
+			D3D11_USAGE_IMMUTABLE,
+			D3D11_BIND_VERTEX_BUFFER,
+			0, // no cpu access
+			0, // no misc flags
+			0, // structured buffer stride
+		};
+	D3D11_SUBRESOURCE_DATA vtxBufferData = {&verts[0], 0, 0};
 
 	V_RETURN(pDevice->CreateBuffer(&vtxBufferDesc, &vtxBufferData, &pMesh->m_pVtxBuffer));
 
 	D3D11_BUFFER_DESC idxBufferDesc =
-	{
-		sizeof(UINT) * dim(indices),
-		D3D11_USAGE_IMMUTABLE,
-		D3D11_BIND_INDEX_BUFFER,
-		0,	// no cpu access
-		0,	// no misc flags
-		0,	// structured buffer stride
-	};
-	D3D11_SUBRESOURCE_DATA idxBufferData = { &indices[0], 0, 0 };
+		{
+			sizeof(UINT) * dim(indices),
+			D3D11_USAGE_IMMUTABLE,
+			D3D11_BIND_INDEX_BUFFER,
+			0, // no cpu access
+			0, // no misc flags
+			0, // structured buffer stride
+		};
+	D3D11_SUBRESOURCE_DATA idxBufferData = {&indices[0], 0, 0};
 
 	V_RETURN(pDevice->CreateBuffer(&idxBufferDesc, &idxBufferData, &pMesh->m_pIdxBuffer));
 
@@ -230,16 +232,14 @@ HRESULT CreateFullscreenMesh(ID3D11Device * pDevice, CMesh * pMesh)
 	return S_OK;
 }
 
-
-
 // Mesh loading - helper functions
 
 HRESULT LoadObjMeshRaw(
-	const wchar_t * strFilename,
-	vector<Vertex> * pVerts,
-	vector<int> * pIndices,
-	XMFLOAT3 * pPosMin,
-	XMFLOAT3 * pPosMax)
+	const wchar_t *strFilename,
+	vector<Vertex> *pVerts,
+	vector<int> *pIndices,
+	XMFLOAT3 *pPosMin,
+	XMFLOAT3 *pPosMax)
 {
 	HRESULT hr;
 
@@ -251,29 +251,34 @@ HRESULT LoadObjMeshRaw(
 	vector<XMFLOAT3> normals;
 	vector<XMFLOAT2> uvs;
 
-	struct OBJVertex { int iPos, iNormal, iUv; };
+	struct OBJVertex
+	{
+		int iPos, iNormal, iUv;
+	};
 	vector<OBJVertex> OBJverts;
 
-	struct OBJFace { int iVertStart, iVertEnd; };
+	struct OBJFace
+	{
+		int iVertStart, iVertEnd;
+	};
 	vector<OBJFace> OBJfaces;
-
 
 	XMVECTOR posMin = XMVectorReplicate(FLT_MAX);
 	XMVECTOR posMax = XMVectorReplicate(-FLT_MAX);
 
 	// Parse the OBJ format line-by-line
-	char * pCtxLine = nullptr;
-	for (char * pLine = strtok_s(&data[0], "\n", &pCtxLine);
+	char *pCtxLine = nullptr;
+	for (char *pLine = strtok_s(&data[0], "\n", &pCtxLine);
 		 pLine;
 		 pLine = strtok_s(nullptr, "\n", &pCtxLine))
 	{
 		// Strip comments starting with #
-		if (char * pChzComment = strchr(pLine, '#'))
+		if (char *pChzComment = strchr(pLine, '#'))
 			*pChzComment = 0;
 
 		// Parse the line token-by-token
-		char * pCtxToken = nullptr;
-		char * pToken = strtok_s(pLine, " \t", &pCtxToken);
+		char *pCtxToken = nullptr;
+		char *pToken = strtok_s(pLine, " \t", &pCtxToken);
 
 		// Ignore blank lines
 		if (!pToken)
@@ -316,13 +321,13 @@ HRESULT LoadObjMeshRaw(
 			OBJFace face;
 			face.iVertStart = int(OBJverts.size());
 
-			while (char * pToken2 = strtok_s(nullptr, " \t", &pCtxToken))
+			while (char *pToken2 = strtok_s(nullptr, " \t", &pCtxToken))
 			{
 				// Parse vertex specification, with slashes separating position, UV, normal indices
 				// Note: assuming all three components are present, OBJ format allows some to be missing.
 				OBJVertex vert;
 				sscanf_s(pToken2, "%d/%d/%d", &vert.iPos, &vert.iUv, &vert.iNormal);
-				
+
 				// OBJ format uses 1-based indices; correct them
 				--vert.iPos;
 				--vert.iNormal;
@@ -369,18 +374,20 @@ HRESULT LoadObjMeshRaw(
 		}
 	}
 
-	if (pPosMin) XMStoreFloat3(pPosMin, posMin);
-	if (pPosMax) XMStoreFloat3(pPosMax, posMax);
+	if (pPosMin)
+		XMStoreFloat3(pPosMin, posMin);
+	if (pPosMax)
+		XMStoreFloat3(pPosMax, posMax);
 
 	return S_OK;
 }
 
-void DeduplicateVerts(CMesh * pMesh)
+void DeduplicateVerts(CMesh *pMesh)
 {
 	struct VertexHasher
 	{
 		hash<float> fh;
-		size_t operator () (const Vertex & v) const
+		size_t operator()(const Vertex &v) const
 		{
 			return fh(v.m_pos.x) ^ fh(v.m_pos.y) ^ fh(v.m_pos.z) ^
 				   fh(v.m_normal.x) ^ fh(v.m_normal.y) ^ fh(v.m_normal.z) ^
@@ -391,7 +398,7 @@ void DeduplicateVerts(CMesh * pMesh)
 
 	struct VertexEquator
 	{
-		bool operator () (const Vertex & u, const Vertex & v) const
+		bool operator()(const Vertex &u, const Vertex &v) const
 		{
 			return (u.m_pos.x == v.m_pos.x &&
 					u.m_pos.y == v.m_pos.y &&
@@ -414,7 +421,7 @@ void DeduplicateVerts(CMesh * pMesh)
 
 	for (int i = 0, cVert = int(pMesh->m_verts.size()); i < cVert; ++i)
 	{
-		const Vertex & vert = pMesh->m_verts[i];
+		const Vertex &vert = pMesh->m_verts[i];
 		unordered_map<Vertex, int, VertexHasher, VertexEquator>::iterator
 			iter = mapVertToIndex.find(vert);
 		if (iter == mapVertToIndex.end())
@@ -450,45 +457,45 @@ void DeduplicateVerts(CMesh * pMesh)
 
 // Custom allocator for FaceWorks - just logs the allocs and passes through to CRT
 
-void * MallocForFaceWorks(size_t bytes)
+void *MallocForFaceWorks(size_t bytes)
 {
-	void * p = ::operator new(bytes);
+	void *p = ::operator new(bytes);
 	DebugPrintf(L"FaceWorks alloced %d bytes: %p\n", bytes, p);
 	return p;
 }
 
-void FreeForFaceWorks(void * p)
+void FreeForFaceWorks(void *p)
 {
 	DebugPrintf(L"FaceWorks freed %p\n", p);
 	::operator delete(p);
 }
 
-void CalculateCurvature(CMesh * pMesh)
+void CalculateCurvature(CMesh *pMesh)
 {
 	// Calculate mesh curvature - also demonstrate using a custom allocator
 
 	GFSDK_FaceWorks_ErrorBlob errorBlob = {};
-	gfsdk_new_delete_t allocator = { &MallocForFaceWorks, &FreeForFaceWorks };
+	gfsdk_new_delete_t allocator = {&MallocForFaceWorks, &FreeForFaceWorks};
 	GFSDK_FaceWorks_Result result = GFSDK_FaceWorks_CalculateMeshCurvature(
-										int(pMesh->m_verts.size()),
-										&pMesh->m_verts[0].m_pos,
-										sizeof(Vertex),
-										&pMesh->m_verts[0].m_normal,
-										sizeof(Vertex),
-										int(pMesh->m_indices.size()),
-										&pMesh->m_indices[0],
-										2, // smoothing passes
-										&pMesh->m_verts[0].m_curvature,
-										sizeof(Vertex),
-										&errorBlob,
-										&allocator);
+		int(pMesh->m_verts.size()),
+		&pMesh->m_verts[0].m_pos,
+		sizeof(Vertex),
+		&pMesh->m_verts[0].m_normal,
+		sizeof(Vertex),
+		int(pMesh->m_indices.size()),
+		&pMesh->m_indices[0],
+		2, // smoothing passes
+		&pMesh->m_verts[0].m_curvature,
+		sizeof(Vertex),
+		&errorBlob,
+		&allocator);
 
 	if (result != GFSDK_FaceWorks_OK)
 	{
 #if defined(_DEBUG)
 		wchar_t msg[512];
-		_snwprintf_s(msg, dim(msg), _TRUNCATE, 
-			L"GFSDK_FaceWorks_CalculateMeshCurvature() failed:\n%hs", errorBlob.m_msg);
+		_snwprintf_s(msg, dim(msg), _TRUNCATE,
+					 L"GFSDK_FaceWorks_CalculateMeshCurvature() failed:\n%hs", errorBlob.m_msg);
 		DXUTTrace(__FILE__, __LINE__, E_FAIL, msg, true);
 #endif
 		GFSDK_FaceWorks_FreeErrorBlob(&errorBlob);
@@ -513,25 +520,25 @@ void CalculateCurvature(CMesh * pMesh)
 #endif // defined(_DEBUG)
 }
 
-void CalculateUVScale(CMesh * pMesh)
+void CalculateUVScale(CMesh *pMesh)
 {
 	GFSDK_FaceWorks_ErrorBlob errorBlob = {};
 	GFSDK_FaceWorks_Result result = GFSDK_FaceWorks_CalculateMeshUVScale(
-										int(pMesh->m_verts.size()),
-										&pMesh->m_verts[0].m_pos,
-										sizeof(Vertex),
-										&pMesh->m_verts[0].m_uv,
-										sizeof(Vertex),
-										int(pMesh->m_indices.size()),
-										&pMesh->m_indices[0],
-										&pMesh->m_uvScale,
-										&errorBlob);
+		int(pMesh->m_verts.size()),
+		&pMesh->m_verts[0].m_pos,
+		sizeof(Vertex),
+		&pMesh->m_verts[0].m_uv,
+		sizeof(Vertex),
+		int(pMesh->m_indices.size()),
+		&pMesh->m_indices[0],
+		&pMesh->m_uvScale,
+		&errorBlob);
 	if (result != GFSDK_FaceWorks_OK)
 	{
 #if defined(_DEBUG)
 		wchar_t msg[512];
 		_snwprintf_s(msg, dim(msg), _TRUNCATE,
-			L"GFSDK_FaceWorks_CalculateMeshUVScale() failed:\n%hs", errorBlob.m_msg);
+					 L"GFSDK_FaceWorks_CalculateMeshUVScale() failed:\n%hs", errorBlob.m_msg);
 		DXUTTrace(__FILE__, __LINE__, E_FAIL, msg, true);
 #endif
 		GFSDK_FaceWorks_FreeErrorBlob(&errorBlob);
@@ -543,7 +550,7 @@ void CalculateUVScale(CMesh * pMesh)
 #endif
 }
 
-void CalculateTangents(CMesh * pMesh)
+void CalculateTangents(CMesh *pMesh)
 {
 	assert(pMesh->m_indices.size() % 3 == 0);
 
@@ -557,15 +564,14 @@ void CalculateTangents(CMesh * pMesh)
 	// and accumulate onto vertex
 	for (int i = 0, c = int(pMesh->m_indices.size()); i < c; i += 3)
 	{
-		int indices[3] = { pMesh->m_indices[i], pMesh->m_indices[i+1], pMesh->m_indices[i+2] };
+		int indices[3] = {pMesh->m_indices[i], pMesh->m_indices[i + 1], pMesh->m_indices[i + 2]};
 
 		// Gather positions for this triangle
 		XMVECTOR facePositions[3] =
-		{
-			XMLoadFloat3(&pMesh->m_verts[indices[0]].m_pos),
-			XMLoadFloat3(&pMesh->m_verts[indices[1]].m_pos),
-			XMLoadFloat3(&pMesh->m_verts[indices[2]].m_pos)
-		};
+			{
+				XMLoadFloat3(&pMesh->m_verts[indices[0]].m_pos),
+				XMLoadFloat3(&pMesh->m_verts[indices[1]].m_pos),
+				XMLoadFloat3(&pMesh->m_verts[indices[2]].m_pos)};
 
 		// Calculate edge and normal vectors
 		XMVECTOR edge0 = facePositions[1] - facePositions[0];
@@ -577,12 +583,11 @@ void CalculateTangents(CMesh * pMesh)
 
 		// Gather UVs for this triangle
 		XMFLOAT2 faceUVs[3] =
-		{
-			pMesh->m_verts[indices[0]].m_uv,
-			pMesh->m_verts[indices[1]].m_uv,
-			pMesh->m_verts[indices[2]].m_uv,
-		};
-
+			{
+				pMesh->m_verts[indices[0]].m_uv,
+				pMesh->m_verts[indices[1]].m_uv,
+				pMesh->m_verts[indices[2]].m_uv,
+			};
 
 #if 0
 		// This code is no longer used because it caused to invert a rank-deficient matrix
@@ -605,10 +610,9 @@ void CalculateTangents(CMesh * pMesh)
 			faceUVs[2].y - faceUVs[0].y, faceUVs[0].y - faceUVs[1].y, 0.0f, 0.0f,
 			faceUVs[0].x - faceUVs[2].x, faceUVs[1].x - faceUVs[0].x, 0.0f, 0.0f,
 			0.0f, 0.0f, 1.0f, 0.0f,
-			0.0f, 0.0f, 0.0f, 1.0f
-		);
+			0.0f, 0.0f, 0.0f, 1.0f);
 		XMMATRIX matUVToPositionDenormalized = XMMatrixMultiply(matUVToUnitDenormalized, matUnitToPosition);
-		
+
 		XMVECTOR tangent = matUVToPositionDenormalized.r[0];
 		if (XMVector3Equal(tangent, XMVectorZero()))
 		{
@@ -635,15 +639,15 @@ void CalculateTangents(CMesh * pMesh)
 }
 
 HRESULT LoadObjMesh(
-	const wchar_t * strFilename,
-	ID3D11Device * pDevice,
-	CMesh * pMesh)
+	const wchar_t *strFilename,
+	ID3D11Device *pDevice,
+	CMesh *pMesh)
 {
 	HRESULT hr;
 
 	V_RETURN(LoadObjMeshRaw(
-				strFilename, &pMesh->m_verts, &pMesh->m_indices,
-				&pMesh->m_posMin, &pMesh->m_posMax));
+		strFilename, &pMesh->m_verts, &pMesh->m_indices,
+		&pMesh->m_posMin, &pMesh->m_posMax));
 
 	DeduplicateVerts(pMesh);
 
@@ -663,28 +667,28 @@ HRESULT LoadObjMesh(
 	CalculateTangents(pMesh);
 
 	D3D11_BUFFER_DESC vtxBufferDesc =
-	{
-		sizeof(Vertex) * UINT(pMesh->m_verts.size()),
-		D3D11_USAGE_IMMUTABLE,
-		D3D11_BIND_VERTEX_BUFFER,
-		0,	// no cpu access
-		0,	// no misc flags
-		0,	// structured buffer stride
-	};
-	D3D11_SUBRESOURCE_DATA vtxBufferData = { &pMesh->m_verts[0], 0, 0 };
+		{
+			sizeof(Vertex) * UINT(pMesh->m_verts.size()),
+			D3D11_USAGE_IMMUTABLE,
+			D3D11_BIND_VERTEX_BUFFER,
+			0, // no cpu access
+			0, // no misc flags
+			0, // structured buffer stride
+		};
+	D3D11_SUBRESOURCE_DATA vtxBufferData = {&pMesh->m_verts[0], 0, 0};
 
 	V_RETURN(pDevice->CreateBuffer(&vtxBufferDesc, &vtxBufferData, &pMesh->m_pVtxBuffer));
 
 	D3D11_BUFFER_DESC idxBufferDesc =
-	{
-		sizeof(int) * UINT(pMesh->m_indices.size()),
-		D3D11_USAGE_IMMUTABLE,
-		D3D11_BIND_INDEX_BUFFER,
-		0,	// no cpu access
-		0,	// no misc flags
-		0,	// structured buffer stride
-	};
-	D3D11_SUBRESOURCE_DATA idxBufferData = { &pMesh->m_indices[0], 0, 0 };
+		{
+			sizeof(int) * UINT(pMesh->m_indices.size()),
+			D3D11_USAGE_IMMUTABLE,
+			D3D11_BIND_INDEX_BUFFER,
+			0, // no cpu access
+			0, // no misc flags
+			0, // structured buffer stride
+		};
+	D3D11_SUBRESOURCE_DATA idxBufferData = {&pMesh->m_indices[0], 0, 0};
 
 	V_RETURN(pDevice->CreateBuffer(&idxBufferDesc, &idxBufferData, &pMesh->m_pIdxBuffer));
 
@@ -698,29 +702,29 @@ HRESULT LoadObjMesh(
 	return S_OK;
 }
 
-
-bool WCStringEndsWith(const wchar_t* hay, const wchar_t* needle)
+bool WCStringEndsWith(const wchar_t *hay, const wchar_t *needle)
 {
 	size_t hay_lenght = wcslen(hay);
 	size_t needle_length = wcslen(needle);
-	if (hay_lenght < needle_length) return false;    
+	if (hay_lenght < needle_length)
+		return false;
 	return wcscmp(hay + hay_lenght - needle_length, needle) == 0;
 }
 
 HRESULT LoadTexture(
-	const wchar_t * strFilename,
-	ID3D11Device * pDevice,
-	ID3D11ShaderResourceView ** ppSrv,
+	const wchar_t *strFilename,
+	ID3D11Device *pDevice,
+	ID3D11ShaderResourceView **ppSrv,
 	int flags)
 {
 	return LoadTexture(strFilename, pDevice, nullptr, ppSrv, flags);
 }
 
 HRESULT LoadTexture(
-	const wchar_t * strFilename,
-	ID3D11Device * pDevice,
-	ID3D11DeviceContext * pDeviceContext,
-	ID3D11ShaderResourceView ** ppSrv,
+	const wchar_t *strFilename,
+	ID3D11Device *pDevice,
+	ID3D11DeviceContext *pDeviceContext,
+	ID3D11ShaderResourceView **ppSrv,
 	int flags)
 {
 	HRESULT hr;
@@ -747,7 +751,6 @@ HRESULT LoadTexture(
 			!(bHDR || bLinear),
 			nullptr,
 			ppSrv));
-
 	}
 	else
 	{
@@ -774,7 +777,7 @@ HRESULT LoadTexture(
 	(*ppSrv)->GetDesc(&srvDesc);
 
 	UINT cMipLevels = 1;
-	const wchar_t * strDimension = L"other";
+	const wchar_t *strDimension = L"other";
 	switch (srvDesc.ViewDimension)
 	{
 	case D3D11_SRV_DIMENSION_TEXTURE2D:
@@ -786,13 +789,15 @@ HRESULT LoadTexture(
 		strDimension = L"cube";
 		cMipLevels = srvDesc.TextureCube.MipLevels;
 		break;
-	
-	default: assert(false); break;
+
+	default:
+		assert(false);
+		break;
 	}
 
 	DebugPrintf(
 		L"Loaded %s, format %s, %s, %d mip levels\n",
-		strFilename, 
+		strFilename,
 		DXUTDXGIFormatToString(srvDesc.Format, false),
 		strDimension,
 		cMipLevels);
@@ -801,13 +806,11 @@ HRESULT LoadTexture(
 	return S_OK;
 }
 
-
-
 // CMayaStyleCamera implementation
 
 CMayaStyleCamera::CMayaStyleCamera()
-:	CBaseCamera(),
-	m_fRadius(5.0f)
+	: CBaseCamera(),
+	  m_fRadius(5.0f)
 {
 }
 
@@ -890,8 +893,6 @@ void CMayaStyleCamera::SetViewParams(FXMVECTOR pvEyePt, FXMVECTOR pvLookatPt)
 	m_fRadius = XMVectorGetX(XMVector3Length(vecLook));
 }
 
-
-
 // CFirstPersonCameraRH implementation
 
 void CFirstPersonCameraRH::FrameMove(FLOAT fElapsedTime)
@@ -909,18 +910,19 @@ void CFirstPersonCameraRH::FrameMove(FLOAT fElapsedTime)
 
 	// Get keyboard/mouse/gamepad input
 	GetInput(m_bEnablePositionMovement, (m_nActiveButtonMask & m_nCurrentButtonMask) || m_bRotateWithoutButtonDown,
-			  true);
+			 true);
 
 	// Get amount of velocity based on the keyboard input and drag (if any)
 	UpdateVelocity(fElapsedTime);
 
 	// Simple euler method to calculate position delta
-	XMVECTOR vPosDelta = XMVectorSet(-m_vVelocity.x, m_vVelocity.y, m_vVelocity.z, 0.0f)*fElapsedTime;
-	if (GetAsyncKeyState(VK_LSHIFT) != 0) {
+	XMVECTOR vPosDelta = XMVectorSet(-m_vVelocity.x, m_vVelocity.y, m_vVelocity.z, 0.0f) * fElapsedTime;
+	if (GetAsyncKeyState(VK_LSHIFT) != 0)
+	{
 		vPosDelta *= 2.0f;
 	}
 
-	// If rotating the camera 
+	// If rotating the camera
 	if ((m_nActiveButtonMask & m_nCurrentButtonMask) ||
 		m_bRotateWithoutButtonDown ||
 		m_vGamePadRightThumb.x != 0 ||
@@ -931,7 +933,7 @@ void CFirstPersonCameraRH::FrameMove(FLOAT fElapsedTime)
 		float fPitchDelta = m_vRotVelocity.y;
 
 		// Invert pitch if requested
-		if( m_bInvertPitch )
+		if (m_bInvertPitch)
 			fPitchDelta = -fPitchDelta;
 
 		m_fCameraPitchAngle += fPitchDelta;
@@ -951,7 +953,7 @@ void CFirstPersonCameraRH::FrameMove(FLOAT fElapsedTime)
 	XMVECTOR vWorldUp = XMVector3TransformCoord(vLocalUp, mCameraRot);
 	XMVECTOR vWorldAhead = XMVector3TransformCoord(vLocalAhead, mCameraRot);
 
-	// Transform the position delta by the camera's rotation 
+	// Transform the position delta by the camera's rotation
 	if (!m_bEnableYAxisMovement)
 	{
 		// If restricting Y movement, do not include pitch
@@ -967,7 +969,7 @@ void CFirstPersonCameraRH::FrameMove(FLOAT fElapsedTime)
 	if (m_bClipToBoundary)
 		ConstrainToBoundary(vEye);
 
-	// Update the lookAt position based on the eye position 
+	// Update the lookAt position based on the eye position
 	XMVECTOR vLookAt = vEye + vWorldAhead;
 	XMStoreFloat3(&m_vLookAt, vLookAt);
 
@@ -988,56 +990,55 @@ void CFirstPersonCameraRH::SetProjParams(FLOAT fFOV, FLOAT fAspect, FLOAT fNearP
 	XMStoreFloat4x4(&m_mProj, XMMatrixPerspectiveFovRH(fFOV, fAspect, fNearPlane, fFarPlane));
 }
 
-
-
 // CShadowMap implementation
 
 CShadowMap::CShadowMap()
-:	m_pDsv(nullptr),
-	m_pSrv(nullptr),
-	m_size(0),
-	m_vecLight(0.0f, 0.0f, 0.0f),
-	m_posMinScene(FLT_MAX, FLT_MAX, FLT_MAX),
-	m_posMaxScene(-FLT_MAX, -FLT_MAX, -FLT_MAX),
-	m_matWorldToClip(),
-	m_matWorldToUvzw(),
-	m_vecDiam()
+	: m_pDsv(nullptr),
+	  m_pSrv(nullptr),
+	  m_size(0),
+	  m_vecLight(0.0f, 0.0f, 0.0f),
+	  m_posMinScene(FLT_MAX, FLT_MAX, FLT_MAX),
+	  m_posMaxScene(-FLT_MAX, -FLT_MAX, -FLT_MAX),
+	  m_matWorldToClip(),
+	  m_matWorldToUvzw(),
+	  m_vecDiam()
 {
 }
 
-HRESULT CShadowMap::Init(unsigned int size, ID3D11Device * pDevice)
+HRESULT CShadowMap::Init(unsigned int size, ID3D11Device *pDevice)
 {
 	HRESULT hr;
 
 	// Create 2D texture for shadow map
 	D3D11_TEXTURE2D_DESC texDesc =
-	{
-		size, size,						// width, height
-		1, 1,							// mip levels, array size
-		DXGI_FORMAT_R32_TYPELESS,
-		{ 1, 0 },						// multisample count, quality
-		D3D11_USAGE_DEFAULT,
-		D3D11_BIND_SHADER_RESOURCE | D3D11_BIND_DEPTH_STENCIL,
-		0,								// no cpu access
-		0,								// no misc flags
-	};
-	ID3D11Texture2D * pTex = nullptr;
+		{
+			size, size, // width, height
+			1,
+			1, // mip levels, array size
+			DXGI_FORMAT_R32_TYPELESS,
+			{1, 0}, // multisample count, quality
+			D3D11_USAGE_DEFAULT,
+			D3D11_BIND_SHADER_RESOURCE | D3D11_BIND_DEPTH_STENCIL,
+			0, // no cpu access
+			0, // no misc flags
+		};
+	ID3D11Texture2D *pTex = nullptr;
 	V_RETURN(pDevice->CreateTexture2D(&texDesc, nullptr, &pTex));
 
 	// Create depth-stencil view
 	D3D11_DEPTH_STENCIL_VIEW_DESC dsvDesc =
-	{
-		DXGI_FORMAT_D32_FLOAT,
-		D3D11_DSV_DIMENSION_TEXTURE2D,
-	};
+		{
+			DXGI_FORMAT_D32_FLOAT,
+			D3D11_DSV_DIMENSION_TEXTURE2D,
+		};
 	V_RETURN(pDevice->CreateDepthStencilView(pTex, &dsvDesc, &m_pDsv));
 
 	// Create shader resource view
 	D3D11_SHADER_RESOURCE_VIEW_DESC srvDesc =
-	{
-		DXGI_FORMAT_R32_FLOAT,
-		D3D11_SRV_DIMENSION_TEXTURE2D,
-	};
+		{
+			DXGI_FORMAT_R32_FLOAT,
+			D3D11_SRV_DIMENSION_TEXTURE2D,
+		};
 	srvDesc.Texture2D.MipLevels = 1;
 	V_RETURN(pDevice->CreateShaderResourceView(pTex, &srvDesc, &m_pSrv));
 
@@ -1062,7 +1063,8 @@ void CShadowMap::UpdateMatrix()
 	XMVECTOR vecUp = XMVectorSet(0.0f, 1.0f, 0.0f, 0.0f);
 
 	// Handle light vector being straight up or down
-	if (fabsf(m_vecLight.x) < 1e-4f && fabsf(m_vecLight.z) < 1e-4f) {
+	if (fabsf(m_vecLight.x) < 1e-4f && fabsf(m_vecLight.z) < 1e-4f)
+	{
 		vecUp = XMVectorSet(1.0f, 0.0f, 0.0f, 0.0f);
 	}
 
@@ -1101,17 +1103,17 @@ void CShadowMap::UpdateMatrix()
 		XMVectorGetY(posMinView), XMVectorGetY(posMaxView),
 		-XMVectorGetZ(posMaxView), -XMVectorGetZ(posMinView));
 	XMStoreFloat4x4(&m_matProj, matProj);
-	
+
 	XMMATRIX matWorldToClip = matView * matProj;
 	XMStoreFloat4x4(&m_matWorldToClip, matWorldToClip);
 
 	// Calculate matrix that maps to [0, 1] UV space instead of [-1, 1] clip space
 
 	XMMATRIX matClipToUvzw(
-		0.5f,  0,    0, 0,
-		0,    -0.5f, 0, 0,
-		0,     0,    1, 0,
-		0.5f,  0.5f, 0, 1);
+		0.5f, 0, 0, 0,
+		0, -0.5f, 0, 0,
+		0, 0, 1, 0,
+		0.5f, 0.5f, 0, 1);
 
 	XMMATRIX matWorldToUvzw = matWorldToClip * matClipToUvzw;
 	XMStoreFloat4x4(&m_matWorldToUvzw, matWorldToUvzw);
@@ -1119,22 +1121,21 @@ void CShadowMap::UpdateMatrix()
 	// Calculate inverse transpose matrix for transforming normals
 
 	XMMATRIX matWorldToUvzNormal = XMMatrixTranspose(XMMatrixInverse(nullptr, XMMATRIX(
-		matWorldToUvzw.r[0],
-		matWorldToUvzw.r[1],
-		matWorldToUvzw.r[2],
-		XMVectorSelect(matWorldToUvzw.r[3], g_XMZero, g_XMSelect1110)
-	)));
+																				  matWorldToUvzw.r[0],
+																				  matWorldToUvzw.r[1],
+																				  matWorldToUvzw.r[2],
+																				  XMVectorSelect(matWorldToUvzw.r[3], g_XMZero, g_XMSelect1110))));
 	XMStoreFloat4x4(&m_matWorldToUvzNormal, matWorldToUvzNormal);
 }
 
-void CShadowMap::BindRenderTarget(ID3D11DeviceContext * pCtx)
+void CShadowMap::BindRenderTarget(ID3D11DeviceContext *pCtx)
 {
 	D3D11_VIEWPORT viewport =
-	{
-		0.0f, 0.0f,						// left, top
-		float(m_size), float(m_size),	// width, height
-		0.0f, 1.0f,						// min/max depth
-	};
+		{
+			0.0f, 0.0f,					  // left, top
+			float(m_size), float(m_size), // width, height
+			0.0f, 1.0f,					  // min/max depth
+		};
 
 	pCtx->RSSetViewports(1, &viewport);
 	pCtx->OMSetRenderTargets(0, nullptr, m_pDsv);
@@ -1148,62 +1149,61 @@ XMFLOAT3 CShadowMap::CalcFilterUVZScale(float filterRadius) const
 	float zScale = 4.0f;
 
 	return XMFLOAT3(
-			filterRadius / m_vecDiam.x,
-			filterRadius / m_vecDiam.y,
-			zScale * filterRadius / m_vecDiam.z);
+		filterRadius / m_vecDiam.x,
+		filterRadius / m_vecDiam.y,
+		zScale * filterRadius / m_vecDiam.z);
 }
-
-
 
 // CVarShadowMap implementation
 
 extern CMesh g_meshFullscreen;
 
 CVarShadowMap::CVarShadowMap()
-:	m_pRtv(nullptr),
-	m_pSrv(nullptr),
-	m_pRtvTemp(nullptr),
-	m_pSrvTemp(nullptr),
-	m_size(0),
-	m_blurRadius(1.0f)
+	: m_pRtv(nullptr),
+	  m_pSrv(nullptr),
+	  m_pRtvTemp(nullptr),
+	  m_pSrvTemp(nullptr),
+	  m_size(0),
+	  m_blurRadius(1.0f)
 {
 }
 
-HRESULT CVarShadowMap::Init(unsigned int size, ID3D11Device * pDevice)
+HRESULT CVarShadowMap::Init(unsigned int size, ID3D11Device *pDevice)
 {
 	HRESULT hr;
 
 	// Create 2D textures for VSM and temp VSM for blur
 	D3D11_TEXTURE2D_DESC texDesc =
-	{
-		size, size,						// width, height
-		1, 1,							// mip levels, array size
-		DXGI_FORMAT_R32G32_FLOAT,
-		{ 1, 0 },						// multisample count, quality
-		D3D11_USAGE_DEFAULT,
-		D3D11_BIND_SHADER_RESOURCE | D3D11_BIND_RENDER_TARGET,
-		0,								// no cpu access
-		0,								// no misc flags
-	};
-	ID3D11Texture2D * pTex = nullptr, * pTexTemp = nullptr;
+		{
+			size, size, // width, height
+			1,
+			1, // mip levels, array size
+			DXGI_FORMAT_R32G32_FLOAT,
+			{1, 0}, // multisample count, quality
+			D3D11_USAGE_DEFAULT,
+			D3D11_BIND_SHADER_RESOURCE | D3D11_BIND_RENDER_TARGET,
+			0, // no cpu access
+			0, // no misc flags
+		};
+	ID3D11Texture2D *pTex = nullptr, *pTexTemp = nullptr;
 	V_RETURN(pDevice->CreateTexture2D(&texDesc, nullptr, &pTex));
 	V_RETURN(pDevice->CreateTexture2D(&texDesc, nullptr, &pTexTemp));
 
 	// Create render target views
 	D3D11_RENDER_TARGET_VIEW_DESC rtvDesc =
-	{
-		DXGI_FORMAT_R32G32_FLOAT,
-		D3D11_RTV_DIMENSION_TEXTURE2D,
-	};
+		{
+			DXGI_FORMAT_R32G32_FLOAT,
+			D3D11_RTV_DIMENSION_TEXTURE2D,
+		};
 	V_RETURN(pDevice->CreateRenderTargetView(pTex, &rtvDesc, &m_pRtv));
 	V_RETURN(pDevice->CreateRenderTargetView(pTexTemp, &rtvDesc, &m_pRtvTemp));
 
 	// Create shader resource views
 	D3D11_SHADER_RESOURCE_VIEW_DESC srvDesc =
-	{
-		DXGI_FORMAT_R32G32_FLOAT,
-		D3D11_SRV_DIMENSION_TEXTURE2D,
-	};
+		{
+			DXGI_FORMAT_R32G32_FLOAT,
+			D3D11_SRV_DIMENSION_TEXTURE2D,
+		};
 	srvDesc.Texture2D.MipLevels = 1;
 	V_RETURN(pDevice->CreateShaderResourceView(pTex, &srvDesc, &m_pSrv));
 	V_RETURN(pDevice->CreateShaderResourceView(pTexTemp, &srvDesc, &m_pSrvTemp));
@@ -1223,14 +1223,14 @@ HRESULT CVarShadowMap::Init(unsigned int size, ID3D11Device * pDevice)
 	return S_OK;
 }
 
-void CVarShadowMap::UpdateFromShadowMap(const CShadowMap & shadow, ID3D11DeviceContext * pCtx)
+void CVarShadowMap::UpdateFromShadowMap(const CShadowMap &shadow, ID3D11DeviceContext *pCtx)
 {
 	D3D11_VIEWPORT viewport =
-	{
-		0.0f, 0.0f,						// left, top
-		float(m_size), float(m_size),	// width, height
-		0.0f, 1.0f,						// min/max depth
-	};
+		{
+			0.0f, 0.0f,					  // left, top
+			float(m_size), float(m_size), // width, height
+			0.0f, 1.0f,					  // min/max depth
+		};
 
 	pCtx->RSSetViewports(1, &viewport);
 	pCtx->OMSetRenderTargets(1, &m_pRtv, nullptr);
@@ -1239,14 +1239,14 @@ void CVarShadowMap::UpdateFromShadowMap(const CShadowMap & shadow, ID3D11DeviceC
 	g_meshFullscreen.Draw(pCtx);
 }
 
-void CVarShadowMap::GaussianBlur(ID3D11DeviceContext * pCtx)
+void CVarShadowMap::GaussianBlur(ID3D11DeviceContext *pCtx)
 {
 	D3D11_VIEWPORT viewport =
-	{
-		0.0f, 0.0f,						// left, top
-		float(m_size), float(m_size),	// width, height
-		0.0f, 1.0f,						// min/max depth
-	};
+		{
+			0.0f, 0.0f,					  // left, top
+			float(m_size), float(m_size), // width, height
+			0.0f, 1.0f,					  // min/max depth
+		};
 
 	pCtx->RSSetViewports(1, &viewport);
 	pCtx->OMSetRenderTargets(1, &m_pRtvTemp, nullptr);
@@ -1260,36 +1260,34 @@ void CVarShadowMap::GaussianBlur(ID3D11DeviceContext * pCtx)
 	g_meshFullscreen.Draw(pCtx);
 }
 
-
-
 // CGpuProfiler implementation
 
 CGpuProfiler g_gpuProfiler;
 
 CGpuProfiler::CGpuProfiler()
-:	m_iFrameQuery(0),
-	m_iFrameCollect(-1),
-	m_apQueryTsDisjoint(),
-	m_apQueryTs(),
-	m_fTsUsed(),
-	m_adT(),
-	m_gpuFrameTime(0.0f),
-	m_adTAvg(),
-	m_gpuFrameTimeAvg(0.0f),
-	m_adTTotal(),
-	m_gpuFrameTimeTotal(0.0f),
-	m_frameCount(0),
-	m_tBeginAvg(0)
+	: m_iFrameQuery(0),
+	  m_iFrameCollect(-1),
+	  m_apQueryTsDisjoint(),
+	  m_apQueryTs(),
+	  m_fTsUsed(),
+	  m_adT(),
+	  m_gpuFrameTime(0.0f),
+	  m_adTAvg(),
+	  m_gpuFrameTimeAvg(0.0f),
+	  m_adTTotal(),
+	  m_gpuFrameTimeTotal(0.0f),
+	  m_frameCount(0),
+	  m_tBeginAvg(0)
 {
 }
 
-HRESULT CGpuProfiler::Init(ID3D11Device * pDevice)
+HRESULT CGpuProfiler::Init(ID3D11Device *pDevice)
 {
 	HRESULT hr;
 
 	// Create all the queries we'll need
 
-	D3D11_QUERY_DESC queryDesc = { D3D11_QUERY_TIMESTAMP_DISJOINT, 0 };
+	D3D11_QUERY_DESC queryDesc = {D3D11_QUERY_TIMESTAMP_DISJOINT, 0};
 	V_RETURN(pDevice->CreateQuery(&queryDesc, &m_apQueryTsDisjoint[0]));
 	V_RETURN(pDevice->CreateQuery(&queryDesc, &m_apQueryTsDisjoint[1]));
 
@@ -1319,19 +1317,19 @@ void CGpuProfiler::Release()
 	timeEndPeriod(1);
 }
 
-void CGpuProfiler::BeginFrame(ID3D11DeviceContext * pCtx)
+void CGpuProfiler::BeginFrame(ID3D11DeviceContext *pCtx)
 {
 	pCtx->Begin(m_apQueryTsDisjoint[m_iFrameQuery]);
 	Timestamp(pCtx, GTS_BeginFrame);
 }
 
-void CGpuProfiler::Timestamp(ID3D11DeviceContext * pCtx, GTS gts)
+void CGpuProfiler::Timestamp(ID3D11DeviceContext *pCtx, GTS gts)
 {
 	pCtx->End(m_apQueryTs[gts][m_iFrameQuery]);
 	m_fTsUsed[gts][m_iFrameQuery] = true;
 }
 
-void CGpuProfiler::EndFrame(ID3D11DeviceContext * pCtx)
+void CGpuProfiler::EndFrame(ID3D11DeviceContext *pCtx)
 {
 	Timestamp(pCtx, GTS_EndFrame);
 	pCtx->End(m_apQueryTsDisjoint[m_iFrameQuery]);
@@ -1339,7 +1337,7 @@ void CGpuProfiler::EndFrame(ID3D11DeviceContext * pCtx)
 	++m_iFrameQuery &= 1;
 }
 
-void CGpuProfiler::WaitForDataAndUpdate(ID3D11DeviceContext * pCtx)
+void CGpuProfiler::WaitForDataAndUpdate(ID3D11DeviceContext *pCtx)
 {
 	if (m_iFrameCollect < 0)
 	{

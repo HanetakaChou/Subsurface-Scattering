@@ -42,41 +42,41 @@
 
 #include <GFSDK_FaceWorks.h>
 
-using std::min;
 using std::max;
+using std::min;
 
 // Get the dimension of a static array
-template <typename T, int N> char (&dim_helper(T (&)[N]))[N];
+template <typename T, int N>
+char (&dim_helper(T (&)[N]))[N];
 #define dim(x) (sizeof(dim_helper(x)))
-#define dim_field(S, m) (dim(((S*)nullptr)->m))
+#define dim_field(S, m) (dim(((S *)nullptr)->m))
 
 // math fixup: log2 wasn't defined before VS2013
 #if defined(_MSC_VER) && (_MSC_VER < 1800)
-inline float log2(float x) { return 1.442695041f * logf(x); }
+inline float log2(float x)
+{
+	return 1.442695041f * logf(x);
+}
 #endif
-
-
 
 // Shared constant buffer data for SSS and deep scatter;
 // matches nvsf_CBData in internal.hlsl
 struct CBData
 {
 	// SSS constants
-	float	m_curvatureScale, m_curvatureBias;
-	float	m_shadowScale, m_shadowBias;
-	float	m_minLevelForBlurredNormal;
+	float m_curvatureScale, m_curvatureBias;
+	float m_shadowScale, m_shadowBias;
+	float m_minLevelForBlurredNormal;
 
 	// Deep scatter constants
-	float	m_deepScatterFalloff;
-	float	m_shadowFilterRadius;
-	float	m_decodeDepthScale, m_decodeDepthBias;
+	float m_deepScatterFalloff;
+	float m_shadowFilterRadius;
+	float m_decodeDepthScale, m_decodeDepthBias;
 };
-
-
 
 // Memory allocation helper functions
 
-inline void * FaceWorks_Malloc(size_t bytes, const gfsdk_new_delete_t & allocator)
+inline void *FaceWorks_Malloc(size_t bytes, const gfsdk_new_delete_t &allocator)
 {
 	if (allocator.new_)
 		return allocator.new_(bytes);
@@ -84,7 +84,7 @@ inline void * FaceWorks_Malloc(size_t bytes, const gfsdk_new_delete_t & allocato
 		return ::operator new(bytes);
 }
 
-inline void FaceWorks_Free(void * p, const gfsdk_new_delete_t & allocator)
+inline void FaceWorks_Free(void *p, const gfsdk_new_delete_t &allocator)
 {
 	if (!p)
 		return;
@@ -101,9 +101,9 @@ template <typename T>
 class FaceWorks_Allocator : public std::allocator<T>
 {
 public:
-	gfsdk_new_delete_t	m_allocator;
+	gfsdk_new_delete_t m_allocator;
 
-	explicit FaceWorks_Allocator(gfsdk_new_delete_t * pAllocator)
+	explicit FaceWorks_Allocator(gfsdk_new_delete_t *pAllocator)
 	{
 		if (pAllocator)
 		{
@@ -118,7 +118,7 @@ public:
 	}
 
 	template <typename T1>
-	FaceWorks_Allocator(FaceWorks_Allocator<T1> const & other)
+	FaceWorks_Allocator(FaceWorks_Allocator<T1> const &other)
 		: m_allocator(other.m_allocator)
 	{
 	}
@@ -129,7 +129,7 @@ public:
 		typedef FaceWorks_Allocator<T1> other;
 	};
 
-	pointer allocate(size_type n, const void * hint = nullptr)
+	pointer allocate(size_type n, const void *hint = nullptr)
 	{
 		(void)hint;
 		pointer p = pointer(FaceWorks_Malloc(n * sizeof(T), m_allocator));
@@ -148,10 +148,8 @@ public:
 	}
 };
 
-
-
 // Error blob helper functions
-void BlobPrintf(GFSDK_FaceWorks_ErrorBlob * pBlob, const char * fmt, ...);
+void BlobPrintf(GFSDK_FaceWorks_ErrorBlob *pBlob, const char *fmt, ...);
 #define ErrPrintf(...) BlobPrintf(pErrorBlobOut, "Error: " __VA_ARGS__)
 #define WarnPrintf(...) BlobPrintf(pErrorBlobOut, "Warning: " __VA_ARGS__)
 

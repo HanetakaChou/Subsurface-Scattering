@@ -39,8 +39,6 @@
 #include "tonemap.hlsli"
 #include "GFSDK_FaceWorks.hlsli"
 
-
-
 // Normal mapping
 
 float3 UnpackNormal(
@@ -52,8 +50,6 @@ float3 UnpackNormal(
 				normalStrength);
 }
 
-
-
 // Shadow filtering, using variance shadow maps
 
 float EvaluateShadowVSM(
@@ -64,12 +60,10 @@ float EvaluateShadowVSM(
 
 	float2 vsmValue = g_texVSM.Sample(g_ssBilinearClamp, uvzShadow.xy);
 	float mean = vsmValue.x;
-	float variance = max(g_vsmMinVariance, vsmValue.y - mean*mean);
+	float variance = max(g_vsmMinVariance, vsmValue.y - mean * mean);
 
 	return saturate(variance / (variance + square(uvzShadow.z - mean)));
 }
-
-
 
 // Diffuse lighting
 
@@ -98,14 +92,14 @@ float3 EvaluateSSSDiffuseLight(
 {
 	// Directional light diffuse
 	float3 rgbSSS = GFSDK_FaceWorks_EvaluateSSSDirectLight(
-						faceworksData,
-						normalGeom, normalShade, normalBlurred,
-						g_vecDirectionalLight, curvature,
-						g_texCurvatureLUT, g_ssBilinearClamp);
+		faceworksData,
+		normalGeom, normalShade, normalBlurred,
+		g_vecDirectionalLight, curvature,
+		g_texCurvatureLUT, g_ssBilinearClamp);
 	float3 rgbShadow = GFSDK_FaceWorks_EvaluateSSSShadow(
-							faceworksData,
-							normalGeom, g_vecDirectionalLight, shadow,
-							g_texShadowLUT, g_ssBilinearClamp);
+		faceworksData,
+		normalGeom, g_vecDirectionalLight, shadow,
+		g_texShadowLUT, g_ssBilinearClamp);
 	float3 rgbLightDiffuse = g_rgbDirectionalLight * rgbSSS * rgbShadow;
 
 	// IBL diffuse
@@ -117,12 +111,10 @@ float3 EvaluateSSSDiffuseLight(
 	float3 rgbAmbient1 = g_texCubeDiffuse.Sample(g_ssTrilinearRepeat, normalAmbient1);
 	float3 rgbAmbient2 = g_texCubeDiffuse.Sample(g_ssTrilinearRepeat, normalAmbient2);
 	rgbLightDiffuse += GFSDK_FaceWorks_EvaluateSSSAmbientLight(
-							rgbAmbient0, rgbAmbient1, rgbAmbient2);
+		rgbAmbient0, rgbAmbient1, rgbAmbient2);
 
 	return rgbLightDiffuse;
 }
-
-
 
 // Specular lighting
 
@@ -151,11 +143,11 @@ float3 EvaluateSpecularLight(
 	float ndf0 = pow(NdotH, specPower0) * (specPower0 + 2.0) * 0.5;
 	float schlickSmithFactor0 = rsqrt(specPower0 * (3.14159 * 0.25) + (3.14159 * 0.5));
 	float visibilityFn0 = 0.25 / (lerp(schlickSmithFactor0, 1, NdotL) *
-									lerp(schlickSmithFactor0, 1, NdotV));
+								  lerp(schlickSmithFactor0, 1, NdotV));
 	float ndf1 = pow(NdotH, specPower1) * (specPower1 + 2.0) * 0.5;
 	float schlickSmithFactor1 = rsqrt(specPower1 * (3.14159 * 0.25) + (3.14159 * 0.5));
 	float visibilityFn1 = 0.25 / (lerp(schlickSmithFactor1, 1, NdotL) *
-									lerp(schlickSmithFactor1, 1, NdotV));
+								  lerp(schlickSmithFactor1, 1, NdotV));
 	float ndfResult = lerp(ndf0 * visibilityFn0, ndf1 * visibilityFn1, specLobeBlend);
 
 	float fresnel = lerp(specReflectance, 1.0, pow(1.0 - LdotH, 5.0));
@@ -170,12 +162,12 @@ float3 EvaluateSpecularLight(
 	float gloss0 = gloss;
 	float gloss1 = saturate(2.0 * gloss);
 	float fresnelIBL0 = lerp(specReflectance, 1.0,
-							pow(1.0 - NdotV, 5.0) / (-3.0 * gloss0 + 4.0));
+							 pow(1.0 - NdotV, 5.0) / (-3.0 * gloss0 + 4.0));
 	float mipLevel0 = -9.0 * gloss0 + 9.0;
 	float3 iblSpec0 = fresnelIBL0 * g_texCubeSpec.SampleLevel(
 										g_ssTrilinearRepeat, vecReflect, mipLevel0);
 	float fresnelIBL1 = lerp(specReflectance, 1.0,
-							pow(1.0 - NdotV, 5.0) / (-3.0 * gloss1 + 4.0));
+							 pow(1.0 - NdotV, 5.0) / (-3.0 * gloss1 + 4.0));
 	float mipLevel1 = -9.0 * gloss1 + 9.0;
 	float3 iblSpec1 = fresnelIBL1 * g_texCubeSpec.SampleLevel(
 										g_ssTrilinearRepeat, vecReflect, mipLevel1);
@@ -183,8 +175,6 @@ float3 EvaluateSpecularLight(
 
 	return rgbLitSpecular;
 }
-
-
 
 // Master lighting routine
 
@@ -214,9 +204,9 @@ void LightingMegashader(
 		// Transform normal maps to world space
 
 		float3x3 matTangentToWorld = float3x3(
-										normalize(i_vtx.m_tangent),
-										normalize(cross(normalGeom, i_vtx.m_tangent)),
-										normalGeom);
+			normalize(i_vtx.m_tangent),
+			normalize(cross(normalGeom, i_vtx.m_tangent)),
+			normalGeom);
 
 		normalShade = normalize(mul(normalTangent, matTangentToWorld));
 
@@ -239,8 +229,8 @@ void LightingMegashader(
 	{
 		// Evaluate diffuse lighting
 		float3 rgbDiffuseLight = EvaluateSSSDiffuseLight(
-									normalGeom, normalShade, normalBlurred,
-									shadow, i_vtx.m_curvature, faceworksData);
+			normalGeom, normalShade, normalBlurred,
+			shadow, i_vtx.m_curvature, faceworksData);
 		rgbLitDiffuse = rgbDiffuseLight * rgbDiffuse;
 
 		// Remap shadow to 1/3-as-wide penumbra to match shadow from LUT.
@@ -258,9 +248,9 @@ void LightingMegashader(
 
 	// Evaluate specular lighting
 	float3 rgbLitSpecular = EvaluateSpecularLight(
-								normalGeom, normalShade, vecCamera,
-								specReflectance, gloss,
-								shadow);
+		normalGeom, normalShade, vecCamera,
+		specReflectance, gloss,
+		shadow);
 
 	// Put it all together
 	o_rgbLit = rgbLitDiffuse + rgbLitSpecular;
@@ -275,15 +265,15 @@ void LightingMegashader(
 		uvzShadow += normalShadow * g_deepScatterNormalOffset;
 
 		float thickness = GFSDK_FaceWorks_EstimateThicknessFromParallelShadowPoisson32(
-							faceworksData,
-							g_texShadowMap, g_ssBilinearClamp, uvzShadow);
+			faceworksData,
+			g_texShadowMap, g_ssBilinearClamp, uvzShadow);
 
 		float deepScatterFactor = GFSDK_FaceWorks_EvaluateDeepScatterDirectLight(
-										faceworksData,
-										normalBlurred, g_vecDirectionalLight, thickness);
+			faceworksData,
+			normalBlurred, g_vecDirectionalLight, thickness);
 		rgbDeepScatter *= g_deepScatterIntensity;
 		o_rgbLit += (g_deepScatterIntensity * deepScatterFactor) * rgbDeepScatter *
-						rgbDiffuse * g_rgbDirectionalLight;
+					rgbDiffuse * g_rgbDirectionalLight;
 	}
 
 	// Apply tonemapping to the result

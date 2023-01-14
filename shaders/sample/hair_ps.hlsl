@@ -37,18 +37,22 @@
 
 cbuffer cbShader : CB_SHADER
 {
-	float		g_specReflectance;
-	float		g_gloss;
+	float g_specReflectance;
+	float g_gloss;
 }
 
-Texture2D<float4> g_texDiffuse			: TEX_DIFFUSE0;
+Texture2D<float4> g_texDiffuse : TEX_DIFFUSE0;
 
 void main(
 	in Vertex i_vtx,
-	in float3 i_vecCamera : CAMERA,
-	in float4 i_uvzwShadow : UVZW_SHADOW,
-	in bool front : SV_IsFrontFace,
-	out float4 o_rgbaLit : SV_Target)
+	in float3 i_vecCamera
+	: CAMERA,
+	  in float4 i_uvzwShadow
+	: UVZW_SHADOW,
+	  in bool front
+	: SV_IsFrontFace,
+	  out float4 o_rgbaLit
+	: SV_Target)
 {
 	float2 uv = i_vtx.m_uv;
 
@@ -75,7 +79,7 @@ void main(
 		o_rgbaLit.rgb,
 		false,	// useNormalMap
 		false,	// useSSS
-		false);	// useDeepScatter
+		false); // useDeepScatter
 
 	// Write texture alpha for transparency
 	o_rgbaLit.a = rgbaDiffuse.a;

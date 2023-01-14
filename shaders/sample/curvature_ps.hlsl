@@ -35,8 +35,10 @@
 #include "common.hlsli"
 
 void main(
-	in float i_color : COLOR,
-	out float4 o_rgba : SV_Target)
+	in float i_color
+	: COLOR,
+	  out float4 o_rgba
+	: SV_Target)
 {
 	o_rgba = float4(i_color.xxx, 1.0);
 }

@@ -35,15 +35,18 @@
 #include "common.hlsli"
 #include "tess.hlsli"
 
-[domain("tri")]
-void main(
+[domain("tri")] void main(
 	in OutputPatch<Vertex, 3> i_cps,
 	in PatchConstData i_pcd,
-	in float3 i_bary : SV_DomainLocation,
-	out Vertex o_vtx,
-	out float3 o_vecCamera : CAMERA,
-	out float4 o_uvzwShadow : UVZW_SHADOW,
-	out float4 o_posClip : SV_Position)
+	in float3 i_bary
+	: SV_DomainLocation,
+	  out Vertex o_vtx,
+	  out float3 o_vecCamera
+	: CAMERA,
+	  out float4 o_uvzwShadow
+	: UVZW_SHADOW,
+	  out float4 o_posClip
+	: SV_Position)
 {
 	// Lerp all attributes but position
 	o_vtx.m_normal = i_bary.x * i_cps[0].m_normal + i_bary.y * i_cps[1].m_normal + i_bary.z * i_cps[2].m_normal;

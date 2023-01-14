@@ -32,13 +32,10 @@
 //
 //----------------------------------------------------------------------------------
 
-
 #include "internal.h"
 
 #include <cstdio>
 #include <vector>
-
-
 
 // Versioning
 
@@ -48,34 +45,33 @@ GFSDK_FACEWORKS_API int GFSDK_FACEWORKS_CALLCONV GFSDK_FaceWorks_GetBinaryVersio
 	return GFSDK_FaceWorks_HeaderVersion;
 }
 
-GFSDK_FACEWORKS_API const char * GFSDK_FACEWORKS_CALLCONV GFSDK_FaceWorks_GetBuildInfo()
+GFSDK_FACEWORKS_API const char *GFSDK_FACEWORKS_CALLCONV GFSDK_FaceWorks_GetBuildInfo()
 {
 #define STRINGIZE2(x) #x
 #define STRINGIZE(x) STRINGIZE2(x)
 
-	return 
-		"GFSDK_FaceWorks_HeaderVersion: " STRINGIZE(GFSDK_FaceWorks_HeaderVersion) "\n"
-		"Built on: " __DATE__ " " __TIME__ "\n"
+	return "GFSDK_FaceWorks_HeaderVersion: " STRINGIZE(GFSDK_FaceWorks_HeaderVersion) "\n"
+																					  "Built on: " __DATE__ " " __TIME__ "\n"
 
 #if defined(_MSC_VER)
-		"Compiler: Microsoft Visual C++\n"
-		"_MSC_VER: " STRINGIZE(_MSC_VER) "\n"
+																					  "Compiler: Microsoft Visual C++\n"
+																					  "_MSC_VER: " STRINGIZE(_MSC_VER) "\n"
 #else
-		"Compiler: unknown\n"
+																					  "Compiler: unknown\n"
 #endif
 
 #if defined(_WIN64)
-		"Platform: Win64\n"
+																													   "Platform: Win64\n"
 #elif defined(_WIN32)
-		"Platform: Win32\n"
+																					  "Platform: Win32\n"
 #else
-		"Platform: unknown\n"
+																					  "Platform: unknown\n"
 #endif
 
 #if defined(_DEBUG)
-		"Configuration: Debug\n"
+																													   "Configuration: Debug\n"
 #else
-		"Configuration: Release\n"
+																					  "Configuration: Release\n"
 #endif
 		;
 
@@ -95,11 +91,9 @@ GFSDK_FACEWORKS_API GFSDK_FaceWorks_Result GFSDK_FACEWORKS_CALLCONV GFSDK_FaceWo
 	return GFSDK_FaceWorks_OK;
 }
 
-
-
 // Error blob helper functions
 
-void BlobPrintf(GFSDK_FaceWorks_ErrorBlob * pBlob, const char * fmt, ...)
+void BlobPrintf(GFSDK_FaceWorks_ErrorBlob *pBlob, const char *fmt, ...)
 {
 	if (!pBlob)
 		return;
@@ -116,7 +110,7 @@ void BlobPrintf(GFSDK_FaceWorks_ErrorBlob * pBlob, const char * fmt, ...)
 	{
 		size_t curLen = strlen(pBlob->m_msg);
 		size_t bytes = curLen + newLen + 1;
-		char * concat = static_cast<char *>(FaceWorks_Malloc(bytes, pBlob->m_allocator));
+		char *concat = static_cast<char *>(FaceWorks_Malloc(bytes, pBlob->m_allocator));
 		if (!concat)
 		{
 			// Out of memory while generating an error message - just give up
@@ -141,7 +135,7 @@ void BlobPrintf(GFSDK_FaceWorks_ErrorBlob * pBlob, const char * fmt, ...)
 }
 
 GFSDK_FACEWORKS_API void GFSDK_FACEWORKS_CALLCONV GFSDK_FaceWorks_FreeErrorBlob(
-	GFSDK_FaceWorks_ErrorBlob * pBlob)
+	GFSDK_FaceWorks_ErrorBlob *pBlob)
 {
 	if (!pBlob)
 		return;
@@ -150,8 +144,6 @@ GFSDK_FACEWORKS_API void GFSDK_FACEWORKS_CALLCONV GFSDK_FaceWorks_FreeErrorBlob(
 	pBlob->m_msg = nullptr;
 }
 
-
-
 GFSDK_FACEWORKS_API size_t GFSDK_FACEWORKS_CALLCONV GFSDK_FaceWorks_CalculateCurvatureSizeBytes(int vertexCount)
 {
 	return sizeof(float) * max(0, vertexCount);
@@ -159,17 +151,17 @@ GFSDK_FACEWORKS_API size_t GFSDK_FACEWORKS_CALLCONV GFSDK_FaceWorks_CalculateCur
 
 GFSDK_FACEWORKS_API GFSDK_FaceWorks_Result GFSDK_FACEWORKS_CALLCONV GFSDK_FaceWorks_CalculateMeshCurvature(
 	int vertexCount,
-	const void * pPositions,
+	const void *pPositions,
 	int positionStrideBytes,
-	const void * pNormals,
+	const void *pNormals,
 	int normalStrideBytes,
 	int indexCount,
-	const int * pIndices,
+	const int *pIndices,
 	int smoothingPassCount,
-	void * pCurvaturesOut,
+	void *pCurvaturesOut,
 	int curvatureStrideBytes,
-	GFSDK_FaceWorks_ErrorBlob * pErrorBlobOut,
-	gfsdk_new_delete_t * pAllocator /*= 0*/)
+	GFSDK_FaceWorks_ErrorBlob *pErrorBlobOut,
+	gfsdk_new_delete_t *pAllocator /*= 0*/)
 {
 	// Validate parameters
 	if (vertexCount < 1)
@@ -185,7 +177,7 @@ GFSDK_FACEWORKS_API GFSDK_FaceWorks_Result GFSDK_FACEWORKS_CALLCONV GFSDK_FaceWo
 	if (positionStrideBytes < 3 * int(sizeof(float)))
 	{
 		ErrPrintf("positionStrideBytes is %d; should be at least %d\n",
-			positionStrideBytes, 3 * sizeof(float));
+				  positionStrideBytes, 3 * sizeof(float));
 		return GFSDK_FaceWorks_InvalidArgument;
 	}
 	if (!pNormals)
@@ -196,7 +188,7 @@ GFSDK_FACEWORKS_API GFSDK_FaceWorks_Result GFSDK_FACEWORKS_CALLCONV GFSDK_FaceWo
 	if (normalStrideBytes < 3 * int(sizeof(float)))
 	{
 		ErrPrintf("normalStrideBytes is %d; should be at least %d\n",
-			normalStrideBytes, 3 * sizeof(float));
+				  normalStrideBytes, 3 * sizeof(float));
 		return GFSDK_FaceWorks_InvalidArgument;
 	}
 	if (indexCount < 3)
@@ -222,7 +214,7 @@ GFSDK_FACEWORKS_API GFSDK_FaceWorks_Result GFSDK_FACEWORKS_CALLCONV GFSDK_FaceWo
 	if (curvatureStrideBytes < int(sizeof(float)))
 	{
 		ErrPrintf("curvatureStrideBytes is %d; should be at least %d\n",
-			curvatureStrideBytes, sizeof(float));
+				  curvatureStrideBytes, sizeof(float));
 		return GFSDK_FaceWorks_InvalidArgument;
 	}
 
@@ -244,25 +236,25 @@ GFSDK_FACEWORKS_API GFSDK_FaceWorks_Result GFSDK_FACEWORKS_CALLCONV GFSDK_FaceWo
 		for (int iTri = 0; iTri < triCount; ++iTri)
 		{
 			int indices[] =
-			{
-				pIndices[3*iTri],
-				pIndices[3*iTri + 1],
-				pIndices[3*iTri + 2],
-			};
+				{
+					pIndices[3 * iTri],
+					pIndices[3 * iTri + 1],
+					pIndices[3 * iTri + 2],
+				};
 
-			float * pos[] =
-			{
-				reinterpret_cast<float *>((char *)pPositions + indices[0] * positionStrideBytes),
-				reinterpret_cast<float *>((char *)pPositions + indices[1] * positionStrideBytes),
-				reinterpret_cast<float *>((char *)pPositions + indices[2] * positionStrideBytes),
-			};
+			float *pos[] =
+				{
+					reinterpret_cast<float *>((char *)pPositions + indices[0] * positionStrideBytes),
+					reinterpret_cast<float *>((char *)pPositions + indices[1] * positionStrideBytes),
+					reinterpret_cast<float *>((char *)pPositions + indices[2] * positionStrideBytes),
+				};
 
-			float * normal[] =
-			{
-				reinterpret_cast<float *>((char *)pNormals + indices[0] * normalStrideBytes),
-				reinterpret_cast<float *>((char *)pNormals + indices[1] * normalStrideBytes),
-				reinterpret_cast<float *>((char *)pNormals + indices[2] * normalStrideBytes),
-			};
+			float *normal[] =
+				{
+					reinterpret_cast<float *>((char *)pNormals + indices[0] * normalStrideBytes),
+					reinterpret_cast<float *>((char *)pNormals + indices[1] * normalStrideBytes),
+					reinterpret_cast<float *>((char *)pNormals + indices[2] * normalStrideBytes),
+				};
 
 			// Calculate each edge's curvature - most edges will be calculated twice this
 			// way, but it's hard to fix that while still making sure to handle boundary edges.
@@ -273,7 +265,7 @@ GFSDK_FACEWORKS_API GFSDK_FaceWorks_Result GFSDK_FACEWORKS_CALLCONV GFSDK_FaceWo
 			float dNx = normal[1][0] - normal[0][0];
 			float dNy = normal[1][1] - normal[0][1];
 			float dNz = normal[1][2] - normal[0][2];
-			float curvature = sqrtf((dNx*dNx + dNy*dNy + dNz*dNz) / (dPx*dPx + dPy*dPy + dPz*dPz));
+			float curvature = sqrtf((dNx * dNx + dNy * dNy + dNz * dNz) / (dPx * dPx + dPy * dPy + dPz * dPz));
 			curvatureMin[indices[0]] = min(curvatureMin[indices[0]], curvature);
 			curvatureMin[indices[1]] = min(curvatureMin[indices[1]], curvature);
 			curvatureMax[indices[0]] = max(curvatureMax[indices[0]], curvature);
@@ -285,7 +277,7 @@ GFSDK_FACEWORKS_API GFSDK_FaceWorks_Result GFSDK_FACEWORKS_CALLCONV GFSDK_FaceWo
 			dNx = normal[2][0] - normal[1][0];
 			dNy = normal[2][1] - normal[1][1];
 			dNz = normal[2][2] - normal[1][2];
-			curvature = sqrtf((dNx*dNx + dNy*dNy + dNz*dNz) / (dPx*dPx + dPy*dPy + dPz*dPz));
+			curvature = sqrtf((dNx * dNx + dNy * dNy + dNz * dNz) / (dPx * dPx + dPy * dPy + dPz * dPz));
 			curvatureMin[indices[1]] = min(curvatureMin[indices[1]], curvature);
 			curvatureMin[indices[2]] = min(curvatureMin[indices[2]], curvature);
 			curvatureMax[indices[1]] = max(curvatureMax[indices[1]], curvature);
@@ -297,7 +289,7 @@ GFSDK_FACEWORKS_API GFSDK_FaceWorks_Result GFSDK_FACEWORKS_CALLCONV GFSDK_FaceWo
 			dNx = normal[0][0] - normal[2][0];
 			dNy = normal[0][1] - normal[2][1];
 			dNz = normal[0][2] - normal[2][2];
-			curvature = sqrtf((dNx*dNx + dNy*dNy + dNz*dNz) / (dPx*dPx + dPy*dPy + dPz*dPz));
+			curvature = sqrtf((dNx * dNx + dNy * dNy + dNz * dNz) / (dPx * dPx + dPy * dPy + dPz * dPz));
 			curvatureMin[indices[2]] = min(curvatureMin[indices[2]], curvature);
 			curvatureMin[indices[0]] = min(curvatureMin[indices[0]], curvature);
 			curvatureMax[indices[2]] = max(curvatureMax[indices[2]], curvature);
@@ -306,7 +298,7 @@ GFSDK_FACEWORKS_API GFSDK_FaceWorks_Result GFSDK_FACEWORKS_CALLCONV GFSDK_FaceWo
 
 		for (int i = 0; i < vertexCount; ++i)
 		{
-			float * pCurvature = reinterpret_cast<float *>((char *)pCurvaturesOut + i * curvatureStrideBytes);
+			float *pCurvature = reinterpret_cast<float *>((char *)pCurvaturesOut + i * curvatureStrideBytes);
 			*pCurvature = 0.5f * (curvatureMin[i] + curvatureMax[i]);
 		}
 	}
@@ -342,11 +334,11 @@ GFSDK_FACEWORKS_API GFSDK_FaceWorks_Result GFSDK_FACEWORKS_CALLCONV GFSDK_FaceWo
 				for (int iTri = 0; iTri < triCount; ++iTri)
 				{
 					int indices[] =
-					{
-						pIndices[3*iTri],
-						pIndices[3*iTri + 1],
-						pIndices[3*iTri + 2],
-					};
+						{
+							pIndices[3 * iTri],
+							pIndices[3 * iTri + 1],
+							pIndices[3 * iTri + 2],
+						};
 
 					float curvature0 = *reinterpret_cast<float *>((char *)pCurvaturesOut + indices[0] * curvatureStrideBytes);
 					float curvature1 = *reinterpret_cast<float *>((char *)pCurvaturesOut + indices[1] * curvatureStrideBytes);
@@ -364,7 +356,7 @@ GFSDK_FACEWORKS_API GFSDK_FaceWorks_Result GFSDK_FACEWORKS_CALLCONV GFSDK_FaceWo
 
 				for (int i = 0; i < vertexCount; ++i)
 				{
-					float * pCurvature = reinterpret_cast<float *>((char *)pCurvaturesOut + i * curvatureStrideBytes);
+					float *pCurvature = reinterpret_cast<float *>((char *)pCurvaturesOut + i * curvatureStrideBytes);
 					*pCurvature = curvatureSum[i] / float(max(1, curvatureCount[i]));
 				}
 			}
@@ -378,18 +370,16 @@ GFSDK_FACEWORKS_API GFSDK_FaceWorks_Result GFSDK_FACEWORKS_CALLCONV GFSDK_FaceWo
 	return GFSDK_FaceWorks_OK;
 }
 
-
-
 GFSDK_FACEWORKS_API GFSDK_FaceWorks_Result GFSDK_FACEWORKS_CALLCONV GFSDK_FaceWorks_CalculateMeshUVScale(
 	int vertexCount,
-	const void * pPositions,
+	const void *pPositions,
 	int positionStrideBytes,
-	const void * pUVs,
+	const void *pUVs,
 	int uvStrideBytes,
 	int indexCount,
-	const int * pIndices,
-	float * pAverageUVScaleOut,
-	GFSDK_FaceWorks_ErrorBlob * pErrorBlobOut)
+	const int *pIndices,
+	float *pAverageUVScaleOut,
+	GFSDK_FaceWorks_ErrorBlob *pErrorBlobOut)
 {
 	// Validate parameters
 	if (vertexCount < 1)
@@ -405,7 +395,7 @@ GFSDK_FACEWORKS_API GFSDK_FaceWorks_Result GFSDK_FACEWORKS_CALLCONV GFSDK_FaceWo
 	if (positionStrideBytes < 3 * int(sizeof(float)))
 	{
 		ErrPrintf("positionStrideBytes is %d; should be at least %d\n",
-			positionStrideBytes, 3 * sizeof(float));
+				  positionStrideBytes, 3 * sizeof(float));
 		return GFSDK_FaceWorks_InvalidArgument;
 	}
 	if (!pUVs)
@@ -416,7 +406,7 @@ GFSDK_FACEWORKS_API GFSDK_FaceWorks_Result GFSDK_FACEWORKS_CALLCONV GFSDK_FaceWo
 	if (uvStrideBytes < 2 * int(sizeof(float)))
 	{
 		ErrPrintf("uvStrideBytes is %d; should be at least %d\n",
-			uvStrideBytes, 2 * sizeof(float));
+				  uvStrideBytes, 2 * sizeof(float));
 		return GFSDK_FaceWorks_InvalidArgument;
 	}
 	if (indexCount < 3)
@@ -450,25 +440,25 @@ GFSDK_FACEWORKS_API GFSDK_FaceWorks_Result GFSDK_FACEWORKS_CALLCONV GFSDK_FaceWo
 	for (int iIndex = 0; iIndex < indexCount; iIndex += 3)
 	{
 		int indices[] =
-		{
-			pIndices[iIndex],
-			pIndices[iIndex + 1],
-			pIndices[iIndex + 2],
-		};
+			{
+				pIndices[iIndex],
+				pIndices[iIndex + 1],
+				pIndices[iIndex + 2],
+			};
 
-		float * pos[] =
-		{
-			reinterpret_cast<float *>((char *)pPositions + indices[0] * positionStrideBytes),
-			reinterpret_cast<float *>((char *)pPositions + indices[1] * positionStrideBytes),
-			reinterpret_cast<float *>((char *)pPositions + indices[2] * positionStrideBytes),
-		};
+		float *pos[] =
+			{
+				reinterpret_cast<float *>((char *)pPositions + indices[0] * positionStrideBytes),
+				reinterpret_cast<float *>((char *)pPositions + indices[1] * positionStrideBytes),
+				reinterpret_cast<float *>((char *)pPositions + indices[2] * positionStrideBytes),
+			};
 
-		float * uv[] =
-		{
-			reinterpret_cast<float *>((char *)pUVs + indices[0] * uvStrideBytes),
-			reinterpret_cast<float *>((char *)pUVs + indices[1] * uvStrideBytes),
-			reinterpret_cast<float *>((char *)pUVs + indices[2] * uvStrideBytes),
-		};
+		float *uv[] =
+			{
+				reinterpret_cast<float *>((char *)pUVs + indices[0] * uvStrideBytes),
+				reinterpret_cast<float *>((char *)pUVs + indices[1] * uvStrideBytes),
+				reinterpret_cast<float *>((char *)pUVs + indices[2] * uvStrideBytes),
+			};
 
 		// Find longest edge length in local space
 		float dP0x = pos[1][0] - pos[0][0];
@@ -480,9 +470,9 @@ GFSDK_FACEWORKS_API GFSDK_FaceWorks_Result GFSDK_FACEWORKS_CALLCONV GFSDK_FaceWo
 		float dP2x = pos[0][0] - pos[2][0];
 		float dP2y = pos[0][1] - pos[2][1];
 		float dP2z = pos[0][2] - pos[2][2];
-		float diameter = sqrtf(max(dP0x*dP0x + dP0y*dP0y + dP0z*dP0z, 
-							   max(dP1x*dP1x + dP1y*dP1y + dP1z*dP1z,
-								   dP2x*dP2x + dP2y*dP2y + dP2z*dP2z)));
+		float diameter = sqrtf(max(dP0x * dP0x + dP0y * dP0y + dP0z * dP0z,
+								   max(dP1x * dP1x + dP1y * dP1y + dP1z * dP1z,
+									   dP2x * dP2x + dP2y * dP2y + dP2z * dP2z)));
 
 		// Find longest edge length in UV space
 		float dUV0x = uv[1][0] - uv[0][0];
@@ -491,9 +481,9 @@ GFSDK_FACEWORKS_API GFSDK_FaceWorks_Result GFSDK_FACEWORKS_CALLCONV GFSDK_FaceWo
 		float dUV1y = uv[2][1] - uv[1][1];
 		float dUV2x = uv[0][0] - uv[2][0];
 		float dUV2y = uv[0][1] - uv[2][1];
-		float uvDiameter = sqrtf(max(dUV0x*dUV0x + dUV0y*dUV0y, 
-								 max(dUV1x*dUV1x + dUV1y*dUV1y,
-									 dUV2x*dUV2x + dUV2y*dUV2y)));
+		float uvDiameter = sqrtf(max(dUV0x * dUV0x + dUV0y * dUV0y,
+									 max(dUV1x * dUV1x + dUV1y * dUV1y,
+										 dUV2x * dUV2x + dUV2y * dUV2y)));
 
 		// Skip degenerate triangles
 		if (diameter < 1e-6f || uvDiameter < 1e-6f)
@@ -509,16 +499,13 @@ GFSDK_FACEWORKS_API GFSDK_FaceWorks_Result GFSDK_FACEWORKS_CALLCONV GFSDK_FaceWo
 	return GFSDK_FaceWorks_OK;
 }
 
-
-
 // Diffusion profile from GPU Gems 3 - mixture of 6 Gaussians with RGB weights
 // NOTE: could switch to a LUT generated using one of the Donner and Jensen papers
 
-static const float diffusionSigmas[] = { 0.080f, 0.220f, 0.432f, 0.753f, 1.411f, 2.722f };
-static const float diffusionWeightsR[] = { 0.233f, 0.100f, 0.118f, 0.113f, 0.358f, 0.078f };
-static const float diffusionWeightsG[] = { 0.455f, 0.336f, 0.198f, 0.007f, 0.004f, 0.000f };
-static const float diffusionWeightsB[] = { 0.649f, 0.344f, 0.000f, 0.007f, 0.000f, 0.000f };
-
+static const float diffusionSigmas[] = {0.080f, 0.220f, 0.432f, 0.753f, 1.411f, 2.722f};
+static const float diffusionWeightsR[] = {0.233f, 0.100f, 0.118f, 0.113f, 0.358f, 0.078f};
+static const float diffusionWeightsG[] = {0.455f, 0.336f, 0.198f, 0.007f, 0.004f, 0.000f};
+static const float diffusionWeightsB[] = {0.649f, 0.344f, 0.000f, 0.007f, 0.000f, 0.000f};
 
 static_assert(dim(diffusionWeightsR) == dim(diffusionSigmas), "dimension mismatch between array diffusionWeightsR and diffusionSigmas");
 static_assert(dim(diffusionWeightsG) == dim(diffusionSigmas), "dimension mismatch between array diffusionWeightsG and diffusionSigmas");
@@ -527,10 +514,10 @@ static_assert(dim(diffusionWeightsB) == dim(diffusionSigmas), "dimension mismatc
 inline float Gaussian(float sigma, float x)
 {
 	static const float rsqrtTwoPi = 0.39894228f;
-	return (rsqrtTwoPi / sigma) * expf(-0.5f * (x*x) / (sigma*sigma));
+	return (rsqrtTwoPi / sigma) * expf(-0.5f * (x * x) / (sigma * sigma));
 }
 
-static void EvaluateDiffusionProfile(float x, float rgb[3])	// x in millimeters
+static void EvaluateDiffusionProfile(float x, float rgb[3]) // x in millimeters
 {
 	rgb[0] = 0.0f;
 	rgb[1] = 0.0f;
@@ -540,7 +527,7 @@ static void EvaluateDiffusionProfile(float x, float rgb[3])	// x in millimeters
 	{
 		static const float rsqrtTwoPi = 0.39894228f;
 		float sigma = diffusionSigmas[i];
-		float gaussian = (rsqrtTwoPi / sigma) * expf(-0.5f * (x*x) / (sigma*sigma));
+		float gaussian = (rsqrtTwoPi / sigma) * expf(-0.5f * (x * x) / (sigma * sigma));
 
 		rgb[0] += diffusionWeightsR[i] * gaussian;
 		rgb[1] += diffusionWeightsG[i] * gaussian;
@@ -549,7 +536,7 @@ static void EvaluateDiffusionProfile(float x, float rgb[3])	// x in millimeters
 }
 
 GFSDK_FACEWORKS_API size_t GFSDK_FACEWORKS_CALLCONV GFSDK_FaceWorks_CalculateCurvatureLUTSizeBytes(
-	const GFSDK_FaceWorks_CurvatureLUTConfig * pConfig)
+	const GFSDK_FaceWorks_CurvatureLUTConfig *pConfig)
 {
 	if (!pConfig)
 		return 0;
@@ -558,9 +545,9 @@ GFSDK_FACEWORKS_API size_t GFSDK_FACEWORKS_CALLCONV GFSDK_FaceWorks_CalculateCur
 }
 
 GFSDK_FACEWORKS_API GFSDK_FaceWorks_Result GFSDK_FACEWORKS_CALLCONV GFSDK_FaceWorks_GenerateCurvatureLUT(
-	const GFSDK_FaceWorks_CurvatureLUTConfig * pConfig,
-	void * pCurvatureLUTOut,
-	GFSDK_FaceWorks_ErrorBlob * pErrorBlobOut)
+	const GFSDK_FaceWorks_CurvatureLUTConfig *pConfig,
+	void *pCurvatureLUTOut,
+	GFSDK_FaceWorks_ErrorBlob *pErrorBlobOut)
 {
 	// Validate parameters
 	if (!pConfig)
@@ -576,40 +563,40 @@ GFSDK_FACEWORKS_API GFSDK_FaceWorks_Result GFSDK_FACEWORKS_CALLCONV GFSDK_FaceWo
 	if (pConfig->m_diffusionRadius <= 0.0f)
 	{
 		ErrPrintf("m_diffusionRadius is %g; should be greater than 0\n",
-			pConfig->m_diffusionRadius);
+				  pConfig->m_diffusionRadius);
 		return GFSDK_FaceWorks_InvalidArgument;
 	}
 	if (pConfig->m_texWidth < 1)
 	{
 		ErrPrintf("m_texWidth is %d; should be at least 1\n",
-			pConfig->m_texWidth);
+				  pConfig->m_texWidth);
 		return GFSDK_FaceWorks_InvalidArgument;
 	}
 	if (pConfig->m_texHeight < 1)
 	{
 		ErrPrintf("m_texHeight is %d; should be at least 1\n",
-			pConfig->m_texHeight);
+				  pConfig->m_texHeight);
 		return GFSDK_FaceWorks_InvalidArgument;
 	}
 	if (pConfig->m_curvatureRadiusMin <= 0.0f)
 	{
 		ErrPrintf("m_curvatureRadiusMin is %g; should be greater than 0\n",
-			pConfig->m_curvatureRadiusMin);
+				  pConfig->m_curvatureRadiusMin);
 		return GFSDK_FaceWorks_InvalidArgument;
 	}
 	if (pConfig->m_curvatureRadiusMax <= 0.0f)
 	{
 		ErrPrintf("m_curvatureRadiusMax is %g; should be greater than 0\n",
-			pConfig->m_curvatureRadiusMax);
+				  pConfig->m_curvatureRadiusMax);
 		return GFSDK_FaceWorks_InvalidArgument;
 	}
 	if (pConfig->m_curvatureRadiusMax < pConfig->m_curvatureRadiusMin)
 	{
 		ErrPrintf("m_curvatureRadiusMin is %g and m_curvatureRadiusMax is %g; max should be greater than min\n",
-			pConfig->m_curvatureRadiusMin, pConfig->m_curvatureRadiusMax);
+				  pConfig->m_curvatureRadiusMin, pConfig->m_curvatureRadiusMax);
 		return GFSDK_FaceWorks_InvalidArgument;
 	}
-	
+
 	// The diffusion profile is built assuming a (standard human skin) radius
 	// of 2.7 mm, so the curvatures and shadow widths need to be scaled to generate
 	// a LUT for the user's desired diffusion radius.
@@ -623,7 +610,7 @@ GFSDK_FACEWORKS_API GFSDK_FaceWorks_Result GFSDK_FACEWORKS_CALLCONV GFSDK_FaceWo
 	float NdotLScale = 2.0f / float(pConfig->m_texWidth);
 	float NdotLBias = -1.0f + 0.5f * NdotLScale;
 
-	unsigned char * pPx = static_cast<unsigned char *>(pCurvatureLUTOut);
+	unsigned char *pPx = static_cast<unsigned char *>(pCurvatureLUTOut);
 
 	// !!!UNDONE: SIMD-ize or GPU-ize all this math
 
@@ -641,11 +628,11 @@ GFSDK_FACEWORKS_API GFSDK_FaceWorks_Result GFSDK_FACEWORKS_CALLCONV GFSDK_FaceWo
 			// scattered lighting using the diffusion profile
 
 			static const int cIter = 200;
-			float rgb[3] = { 0.0f, 0.0f, 0.0f };
+			float rgb[3] = {0.0f, 0.0f, 0.0f};
 
 			// Set integration bounds in arc-length in mm on the sphere
-			float lowerBound = max(-pi*radius, -10.0f);
-			float upperBound = min(pi*radius, 10.0f);
+			float lowerBound = max(-pi * radius, -10.0f);
+			float upperBound = min(pi * radius, 10.0f);
 
 			float iterScale = (upperBound - lowerBound) / float(cIter);
 			float iterBias = lowerBound + 0.5f * iterScale;
@@ -692,7 +679,7 @@ GFSDK_FACEWORKS_API GFSDK_FaceWorks_Result GFSDK_FACEWORKS_CALLCONV GFSDK_FaceWo
 }
 
 GFSDK_FACEWORKS_API size_t GFSDK_FACEWORKS_CALLCONV GFSDK_FaceWorks_CalculateShadowLUTSizeBytes(
-	const GFSDK_FaceWorks_ShadowLUTConfig * pConfig)
+	const GFSDK_FaceWorks_ShadowLUTConfig *pConfig)
 {
 	if (!pConfig)
 		return 0;
@@ -701,9 +688,9 @@ GFSDK_FACEWORKS_API size_t GFSDK_FACEWORKS_CALLCONV GFSDK_FaceWorks_CalculateSha
 }
 
 GFSDK_FACEWORKS_API GFSDK_FaceWorks_Result GFSDK_FACEWORKS_CALLCONV GFSDK_FaceWorks_GenerateShadowLUT(
-	const GFSDK_FaceWorks_ShadowLUTConfig * pConfig,
-	void * pShadowLUTOut,
-	GFSDK_FaceWorks_ErrorBlob * pErrorBlobOut)
+	const GFSDK_FaceWorks_ShadowLUTConfig *pConfig,
+	void *pShadowLUTOut,
+	GFSDK_FaceWorks_ErrorBlob *pErrorBlobOut)
 {
 	if (!pConfig)
 	{
@@ -718,43 +705,43 @@ GFSDK_FACEWORKS_API GFSDK_FaceWorks_Result GFSDK_FACEWORKS_CALLCONV GFSDK_FaceWo
 	if (pConfig->m_diffusionRadius <= 0.0f)
 	{
 		ErrPrintf("m_diffusionRadius is %g; should be greater than 0\n",
-			pConfig->m_diffusionRadius);
+				  pConfig->m_diffusionRadius);
 		return GFSDK_FaceWorks_InvalidArgument;
 	}
 	if (pConfig->m_texWidth < 1)
 	{
 		ErrPrintf("m_texWidth is %d; should be at least 1\n",
-			pConfig->m_texWidth);
+				  pConfig->m_texWidth);
 		return GFSDK_FaceWorks_InvalidArgument;
 	}
 	if (pConfig->m_texHeight < 1)
 	{
 		ErrPrintf("m_texHeight is %d; should be at least 1\n",
-			pConfig->m_texHeight);
+				  pConfig->m_texHeight);
 		return GFSDK_FaceWorks_InvalidArgument;
 	}
 	if (pConfig->m_shadowWidthMin <= 0.0f)
 	{
 		ErrPrintf("m_shadowWidthMin is %g; should be greater than 0\n",
-			pConfig->m_shadowWidthMin);
+				  pConfig->m_shadowWidthMin);
 		return GFSDK_FaceWorks_InvalidArgument;
 	}
 	if (pConfig->m_shadowWidthMax <= 0.0f)
 	{
 		ErrPrintf("m_shadowWidthMax is %g; should be greater than 0\n",
-			pConfig->m_shadowWidthMax);
+				  pConfig->m_shadowWidthMax);
 		return GFSDK_FaceWorks_InvalidArgument;
 	}
 	if (pConfig->m_shadowWidthMax < pConfig->m_shadowWidthMin)
 	{
 		ErrPrintf("m_shadowWidthMin is %g and m_shadowWidthMax is %g; max should be greater than min\n",
-			pConfig->m_shadowWidthMin, pConfig->m_shadowWidthMax);
+				  pConfig->m_shadowWidthMin, pConfig->m_shadowWidthMax);
 		return GFSDK_FaceWorks_InvalidArgument;
 	}
 	if (pConfig->m_shadowSharpening < 1.0f)
 	{
 		ErrPrintf("m_shadowSharpening is %g; should be at least 1.0\n",
-			pConfig->m_shadowSharpening);
+				  pConfig->m_shadowSharpening);
 		return GFSDK_FaceWorks_InvalidArgument;
 	}
 
@@ -768,7 +755,7 @@ GFSDK_FACEWORKS_API GFSDK_FaceWorks_Result GFSDK_FACEWORKS_CALLCONV GFSDK_FaceWo
 	float shadowScale = (shadowRcpWidthMax - shadowRcpWidthMin) / float(pConfig->m_texHeight);
 	float shadowBias = shadowRcpWidthMin + 0.5f * shadowScale;
 
-	unsigned char * pPx = static_cast<unsigned char *>(pShadowLUTOut);
+	unsigned char *pPx = static_cast<unsigned char *>(pShadowLUTOut);
 
 	// !!!UNDONE: SIMD-ize or GPU-ize all this math
 
@@ -787,7 +774,7 @@ GFSDK_FACEWORKS_API GFSDK_FaceWorks_Result GFSDK_FACEWORKS_CALLCONV GFSDK_FaceWo
 			// Monte-Carlo-integrate the scattered lighting using the diffusion profile
 
 			static const int cIter = 200;
-			float rgb[3] = { 0.0f, 0.0f, 0.0f };
+			float rgb[3] = {0.0f, 0.0f, 0.0f};
 
 			float iterScale = 20.0f / float(cIter);
 			float iterBias = -10.0f + 0.5f * iterScale;
@@ -801,7 +788,7 @@ GFSDK_FACEWORKS_API GFSDK_FaceWorks_Result GFSDK_FACEWORKS_CALLCONV GFSDK_FaceWo
 				// Use smoothstep as an approximation of the transfer function of a
 				// disc or Gaussian filter.
 				float newPos = (inputPos + delta * rcpWidth) * pConfig->m_shadowSharpening +
-											(-0.5f * pConfig->m_shadowSharpening + 0.5f);
+							   (-0.5f * pConfig->m_shadowSharpening + 0.5f);
 				float newPosClamped = min(max(newPos, 0.0f), 1.0f);
 				float newShadow = (3.0f - 2.0f * newPosClamped) * newPosClamped * newPosClamped;
 

@@ -45,24 +45,22 @@
 using namespace std;
 using namespace DirectX;
 
-float	g_normalStrength = 1.0;
-float	g_glossSkin = 0.35f;
-float	g_glossEye = 0.9f;
-float	g_specReflectanceSkinDefault = 0.05f;
-float	g_specReflectanceEye = 0.05f;
-float	g_rgbDeepScatterEye[3] = { 1.0f, 0.3f, 0.3f };
-float	g_irisRadiusSource = 0.200f;	// Radius of iris in iris texture (in UV units)
-float	g_irisRadiusDest = 0.205f;		// Radius of iris in schlera texture (in UV units)
-float	g_irisEdgeHardness = 30.0f;		// Controls hardness/softness of iris edge
-float	g_irisDilation = 0.0f;			// How much the iris is dilated
-float	g_specReflectanceHair = 0.05f;
-float	g_glossHair = 0.25f;
+float g_normalStrength = 1.0;
+float g_glossSkin = 0.35f;
+float g_glossEye = 0.9f;
+float g_specReflectanceSkinDefault = 0.05f;
+float g_specReflectanceEye = 0.05f;
+float g_rgbDeepScatterEye[3] = {1.0f, 0.3f, 0.3f};
+float g_irisRadiusSource = 0.200f; // Radius of iris in iris texture (in UV units)
+float g_irisRadiusDest = 0.205f;   // Radius of iris in schlera texture (in UV units)
+float g_irisEdgeHardness = 30.0f;  // Controls hardness/softness of iris edge
+float g_irisDilation = 0.0f;	   // How much the iris is dilated
+float g_specReflectanceHair = 0.05f;
+float g_glossHair = 0.25f;
 
-
-
-int GetTextureSize(ID3D11ShaderResourceView * pSrv)
+int GetTextureSize(ID3D11ShaderResourceView *pSrv)
 {
-	ID3D11Texture2D * pTex;
+	ID3D11Texture2D *pTex;
 	pSrv->GetResource(reinterpret_cast<ID3D11Resource **>(&pTex));
 	D3D11_TEXTURE2D_DESC texDesc;
 	pTex->GetDesc(&texDesc);
@@ -71,43 +69,49 @@ int GetTextureSize(ID3D11ShaderResourceView * pSrv)
 	return texSize;
 }
 
-ID3D11ShaderResourceView * Create1x1Texture(float r, float g, float b, bool linear = false)
+ID3D11ShaderResourceView *Create1x1Texture(float r, float g, float b, bool linear = false)
 {
 	// Convert floats to 8-bit format
 
 	unsigned char rgba[4] =
-	{
-		static_cast<unsigned char>(min(max(r, 0.0f), 1.0f) * 255.0f + 0.5f),
-		static_cast<unsigned char>(min(max(g, 0.0f), 1.0f) * 255.0f + 0.5f),
-		static_cast<unsigned char>(min(max(b, 0.0f), 1.0f) * 255.0f + 0.5f),
-		255
+		{
+			static_cast<unsigned char>(min(max(r, 0.0f), 1.0f) * 255.0f + 0.5f),
+			static_cast<unsigned char>(min(max(g, 0.0f), 1.0f) * 255.0f + 0.5f),
+			static_cast<unsigned char>(min(max(b, 0.0f), 1.0f) * 255.0f + 0.5f),
+			255};
+
+	D3D11_TEXTURE2D_DESC texDesc =
+		{
+			1,
+			1,
+			1,
+			1,
+			linear ? DXGI_FORMAT_R8G8B8A8_UNORM : DXGI_FORMAT_R8G8B8A8_UNORM_SRGB,
+			{1, 0},
+			D3D11_USAGE_DEFAULT,
+			D3D11_BIND_SHADER_RESOURCE,
+			0,
+			0,
+		};
+
+	D3D11_SUBRESOURCE_DATA initialData = {
+		rgba,
+		4,
 	};
 
-	D3D11_TEXTURE2D_DESC texDesc = 
-	{
-		1, 1, 1, 1,
-		linear ? DXGI_FORMAT_R8G8B8A8_UNORM : DXGI_FORMAT_R8G8B8A8_UNORM_SRGB,
-		{ 1, 0 },
-		D3D11_USAGE_DEFAULT,
-		D3D11_BIND_SHADER_RESOURCE,
-		0, 0,
-	};
-
-	D3D11_SUBRESOURCE_DATA initialData = { rgba, 4, };
-
-	ID3D11Device * pDevice = DXUTGetD3D11Device();
-	ID3D11Texture2D * pTex = nullptr;
+	ID3D11Device *pDevice = DXUTGetD3D11Device();
+	ID3D11Texture2D *pTex = nullptr;
 	HRESULT hr;
 	V(pDevice->CreateTexture2D(&texDesc, &initialData, &pTex));
 
 	D3D11_SHADER_RESOURCE_VIEW_DESC srvDesc =
-	{
-		texDesc.Format,
-		D3D11_SRV_DIMENSION_TEXTURE2D,
-	};
+		{
+			texDesc.Format,
+			D3D11_SRV_DIMENSION_TEXTURE2D,
+		};
 	srvDesc.Texture2D.MipLevels = 1;
 
-	ID3D11ShaderResourceView * pSrv = nullptr;
+	ID3D11ShaderResourceView *pSrv = nullptr;
 	V(pDevice->CreateShaderResourceView(pTex, &srvDesc, &pSrv));
 
 	SAFE_RELEASE(pTex);
@@ -121,27 +125,27 @@ CScene::~CScene() {}
 // CSceneDigitalIra implementation
 
 CSceneDigitalIra::CSceneDigitalIra()
-:	m_meshHead(),
-	m_meshEyeL(),
-	m_meshEyeR(),
-	m_meshLashes(),
-	m_meshBrows(),
-	m_pSrvDiffuseHead(nullptr),
-	m_pSrvNormalHead(nullptr),
-	m_pSrvSpecHead(nullptr),
-	m_pSrvDeepScatterHead(nullptr),
-	m_pSrvDiffuseEyeSclera(nullptr),
-	m_pSrvNormalEyeSclera(nullptr),
-	m_pSrvDiffuseEyeIris(nullptr),
-	m_pSrvDiffuseLashes(nullptr),
-	m_pSrvDiffuseBrows(nullptr),
-	m_mtlHead(),
-	m_mtlEye(),
-	m_mtlLashes(),
-	m_mtlBrows(),
-	m_camera(),
-	m_normalHeadSize(0),
-	m_normalEyeSize(0)
+	: m_meshHead(),
+	  m_meshEyeL(),
+	  m_meshEyeR(),
+	  m_meshLashes(),
+	  m_meshBrows(),
+	  m_pSrvDiffuseHead(nullptr),
+	  m_pSrvNormalHead(nullptr),
+	  m_pSrvSpecHead(nullptr),
+	  m_pSrvDeepScatterHead(nullptr),
+	  m_pSrvDiffuseEyeSclera(nullptr),
+	  m_pSrvNormalEyeSclera(nullptr),
+	  m_pSrvDiffuseEyeIris(nullptr),
+	  m_pSrvDiffuseLashes(nullptr),
+	  m_pSrvDiffuseBrows(nullptr),
+	  m_mtlHead(),
+	  m_mtlEye(),
+	  m_mtlLashes(),
+	  m_mtlBrows(),
+	  m_camera(),
+	  m_normalHeadSize(0),
+	  m_normalEyeSize(0)
 {
 }
 
@@ -149,7 +153,7 @@ HRESULT CSceneDigitalIra::Init()
 {
 	HRESULT hr;
 	wchar_t strPath[MAX_PATH];
-	ID3D11Device * pDevice = DXUTGetD3D11Device();
+	ID3D11Device *pDevice = DXUTGetD3D11Device();
 	ID3D11DeviceContext *pDeviceContext = DXUTGetD3D11DeviceContext();
 
 	// Load meshes
@@ -201,35 +205,44 @@ HRESULT CSceneDigitalIra::Init()
 	// Set up materials
 
 	m_mtlHead.m_shader = SHADER_Skin;
-	m_mtlHead.m_aSrv[0] = m_pSrvDiffuseHead;		m_mtlHead.m_textureSlots[0] = TEX_DIFFUSE0;
-	m_mtlHead.m_aSrv[1] = m_pSrvNormalHead;			m_mtlHead.m_textureSlots[1] = TEX_NORMAL;
-	m_mtlHead.m_aSrv[2] = m_pSrvSpecHead;			m_mtlHead.m_textureSlots[2] = TEX_SPEC;
-	m_mtlHead.m_aSrv[3] = m_pSrvDeepScatterHead;	m_mtlHead.m_textureSlots[3] = TEX_DEEP_SCATTER_COLOR;
+	m_mtlHead.m_aSrv[0] = m_pSrvDiffuseHead;
+	m_mtlHead.m_textureSlots[0] = TEX_DIFFUSE0;
+	m_mtlHead.m_aSrv[1] = m_pSrvNormalHead;
+	m_mtlHead.m_textureSlots[1] = TEX_NORMAL;
+	m_mtlHead.m_aSrv[2] = m_pSrvSpecHead;
+	m_mtlHead.m_textureSlots[2] = TEX_SPEC;
+	m_mtlHead.m_aSrv[3] = m_pSrvDeepScatterHead;
+	m_mtlHead.m_textureSlots[3] = TEX_DEEP_SCATTER_COLOR;
 	m_mtlHead.m_constants[0] = g_normalStrength;
 	m_mtlHead.m_constants[1] = g_glossSkin;
 
 	m_mtlEye.m_shader = SHADER_Eye;
-	m_mtlEye.m_aSrv[0] = m_pSrvDiffuseEyeSclera;	m_mtlEye.m_textureSlots[0] = TEX_DIFFUSE0;
-	m_mtlEye.m_aSrv[1] = m_pSrvDiffuseEyeIris;		m_mtlEye.m_textureSlots[1] = TEX_DIFFUSE1;
-	m_mtlEye.m_aSrv[2] = m_pSrvNormalEyeSclera;		m_mtlEye.m_textureSlots[2] = TEX_NORMAL;
-	m_mtlEye.m_constants[0] = 0.05f;	// normal strength
+	m_mtlEye.m_aSrv[0] = m_pSrvDiffuseEyeSclera;
+	m_mtlEye.m_textureSlots[0] = TEX_DIFFUSE0;
+	m_mtlEye.m_aSrv[1] = m_pSrvDiffuseEyeIris;
+	m_mtlEye.m_textureSlots[1] = TEX_DIFFUSE1;
+	m_mtlEye.m_aSrv[2] = m_pSrvNormalEyeSclera;
+	m_mtlEye.m_textureSlots[2] = TEX_NORMAL;
+	m_mtlEye.m_constants[0] = 0.05f; // normal strength
 	m_mtlEye.m_constants[1] = g_specReflectanceEye;
 	m_mtlEye.m_constants[2] = g_glossEye;
 	m_mtlEye.m_constants[4] = g_rgbDeepScatterEye[0];
 	m_mtlEye.m_constants[5] = g_rgbDeepScatterEye[1];
 	m_mtlEye.m_constants[6] = g_rgbDeepScatterEye[2];
-	m_mtlEye.m_constants[7] = 0.455f;	// Radius of iris in iris texture (in UV units);
-	m_mtlEye.m_constants[8] = 0.230f;	// Radius of iris in schlera texture (in UV units);
-	m_mtlEye.m_constants[9] = 30.0f;	// Controls hardness/softness of iris edge;
-	m_mtlEye.m_constants[10] = 0.5f;	// How much the iris is dilated;
+	m_mtlEye.m_constants[7] = 0.455f; // Radius of iris in iris texture (in UV units);
+	m_mtlEye.m_constants[8] = 0.230f; // Radius of iris in schlera texture (in UV units);
+	m_mtlEye.m_constants[9] = 30.0f;  // Controls hardness/softness of iris edge;
+	m_mtlEye.m_constants[10] = 0.5f;  // How much the iris is dilated;
 
 	m_mtlLashes.m_shader = SHADER_Hair;
-	m_mtlLashes.m_aSrv[0] = m_pSrvDiffuseLashes;	m_mtlLashes.m_textureSlots[0] = TEX_DIFFUSE0;
+	m_mtlLashes.m_aSrv[0] = m_pSrvDiffuseLashes;
+	m_mtlLashes.m_textureSlots[0] = TEX_DIFFUSE0;
 	m_mtlLashes.m_constants[0] = g_specReflectanceHair;
 	m_mtlLashes.m_constants[1] = g_glossHair;
 
 	m_mtlBrows.m_shader = SHADER_Hair;
-	m_mtlBrows.m_aSrv[0] = m_pSrvDiffuseBrows;		m_mtlBrows.m_textureSlots[0] = TEX_DIFFUSE0;
+	m_mtlBrows.m_aSrv[0] = m_pSrvDiffuseBrows;
+	m_mtlBrows.m_textureSlots[0] = TEX_DIFFUSE0;
 	m_mtlBrows.m_constants[0] = g_specReflectanceHair;
 	m_mtlBrows.m_constants[1] = g_glossHair;
 
@@ -268,12 +281,12 @@ void CSceneDigitalIra::Release()
 	SAFE_RELEASE(m_pSrvDiffuseBrows);
 }
 
-CBaseCamera* CSceneDigitalIra::Camera()
+CBaseCamera *CSceneDigitalIra::Camera()
 {
 	return &m_camera;
 }
 
-void CSceneDigitalIra::GetBounds(XMFLOAT3 * pPosMin, XMFLOAT3 * pPosMax)
+void CSceneDigitalIra::GetBounds(XMFLOAT3 *pPosMin, XMFLOAT3 *pPosMax)
 {
 	assert(pPosMin);
 	assert(pPosMax);
@@ -282,7 +295,7 @@ void CSceneDigitalIra::GetBounds(XMFLOAT3 * pPosMin, XMFLOAT3 * pPosMax)
 	*pPosMax = m_meshHead.m_posMax;
 }
 
-void CSceneDigitalIra::GetMeshesToDraw(std::vector<MeshToDraw> * pMeshesToDraw)
+void CSceneDigitalIra::GetMeshesToDraw(std::vector<MeshToDraw> *pMeshesToDraw)
 {
 	assert(pMeshesToDraw);
 
@@ -297,32 +310,51 @@ void CSceneDigitalIra::GetMeshesToDraw(std::vector<MeshToDraw> * pMeshesToDraw)
 
 	// Generate draw records
 
-	MeshToDraw aMtd[] = 
-	{
-		{ &m_mtlHead, &m_meshHead, m_normalHeadSize, m_meshHead.m_uvScale, },
-		{ &m_mtlEye, &m_meshEyeL, m_normalEyeSize, m_meshEyeL.m_uvScale, },
-		{ &m_mtlEye, &m_meshEyeR, m_normalEyeSize, m_meshEyeR.m_uvScale, },
-		{ &m_mtlLashes, &m_meshLashes, },
-		{ &m_mtlBrows, &m_meshBrows, },
-	};
+	MeshToDraw aMtd[] =
+		{
+			{
+				&m_mtlHead,
+				&m_meshHead,
+				m_normalHeadSize,
+				m_meshHead.m_uvScale,
+			},
+			{
+				&m_mtlEye,
+				&m_meshEyeL,
+				m_normalEyeSize,
+				m_meshEyeL.m_uvScale,
+			},
+			{
+				&m_mtlEye,
+				&m_meshEyeR,
+				m_normalEyeSize,
+				m_meshEyeR.m_uvScale,
+			},
+			{
+				&m_mtlLashes,
+				&m_meshLashes,
+			},
+			{
+				&m_mtlBrows,
+				&m_meshBrows,
+			},
+		};
 
 	pMeshesToDraw->assign(&aMtd[0], &aMtd[dim(aMtd)]);
 }
 
-
-
 // CSceneTest implementation
 
 CSceneTest::CSceneTest()
-:	m_meshPlanes(),
-	m_meshShadower(),
-	m_aMeshSpheres(),
-	m_pSrvDiffuse(nullptr),
-	m_pSrvNormalFlat(nullptr),
-	m_pSrvSpec(nullptr),
-	m_pSrvDeepScatter(nullptr),
-	m_mtl(),
-	m_camera()
+	: m_meshPlanes(),
+	  m_meshShadower(),
+	  m_aMeshSpheres(),
+	  m_pSrvDiffuse(nullptr),
+	  m_pSrvNormalFlat(nullptr),
+	  m_pSrvSpec(nullptr),
+	  m_pSrvDeepScatter(nullptr),
+	  m_mtl(),
+	  m_camera()
 {
 }
 
@@ -330,7 +362,7 @@ HRESULT CSceneTest::Init()
 {
 	HRESULT hr;
 	wchar_t strPath[MAX_PATH];
-	ID3D11Device * pDevice = DXUTGetD3D11Device();
+	ID3D11Device *pDevice = DXUTGetD3D11Device();
 
 	// Load meshes
 
@@ -340,16 +372,16 @@ HRESULT CSceneTest::Init()
 	V_RETURN(DXUTFindDXSDKMediaFileCch(strPath, dim(strPath), L"testShadowCaster.obj"));
 	V_RETURN(LoadObjMesh(strPath, pDevice, &m_meshShadower));
 
-	static const wchar_t * aStrSphereNames[] =
-	{
-		L"testSphere1mm.obj",
-		L"testSphere2mm.obj",
-		L"testSphere5mm.obj",
-		L"testSphere1cm.obj",
-		L"testSphere2cm.obj",
-		L"testSphere5cm.obj",
-		L"testSphere10cm.obj",
-	};
+	static const wchar_t *aStrSphereNames[] =
+		{
+			L"testSphere1mm.obj",
+			L"testSphere2mm.obj",
+			L"testSphere5mm.obj",
+			L"testSphere1cm.obj",
+			L"testSphere2cm.obj",
+			L"testSphere5cm.obj",
+			L"testSphere10cm.obj",
+		};
 	static_assert(dim(aStrSphereNames) == dim(m_aMeshSpheres), "dimension mismatch between array aStrSphereNames and m_aMeshSpheres");
 
 	for (int i = 0; i < dim(m_aMeshSpheres); ++i)
@@ -368,10 +400,14 @@ HRESULT CSceneTest::Init()
 	// Set up material
 
 	m_mtl.m_shader = SHADER_Skin;
-	m_mtl.m_aSrv[0] = m_pSrvDiffuse;		m_mtl.m_textureSlots[0] = TEX_DIFFUSE0;
-	m_mtl.m_aSrv[1] = m_pSrvNormalFlat;		m_mtl.m_textureSlots[1] = TEX_NORMAL;
-	m_mtl.m_aSrv[2] = m_pSrvSpec;			m_mtl.m_textureSlots[2] = TEX_SPEC;
-	m_mtl.m_aSrv[2] = m_pSrvDeepScatter;	m_mtl.m_textureSlots[3] = TEX_DEEP_SCATTER_COLOR;
+	m_mtl.m_aSrv[0] = m_pSrvDiffuse;
+	m_mtl.m_textureSlots[0] = TEX_DIFFUSE0;
+	m_mtl.m_aSrv[1] = m_pSrvNormalFlat;
+	m_mtl.m_textureSlots[1] = TEX_NORMAL;
+	m_mtl.m_aSrv[2] = m_pSrvSpec;
+	m_mtl.m_textureSlots[2] = TEX_SPEC;
+	m_mtl.m_aSrv[2] = m_pSrvDeepScatter;
+	m_mtl.m_textureSlots[3] = TEX_DEEP_SCATTER_COLOR;
 	m_mtl.m_constants[0] = g_normalStrength;
 	m_mtl.m_constants[1] = g_glossSkin;
 
@@ -403,12 +439,12 @@ void CSceneTest::Release()
 	SAFE_RELEASE(m_pSrvDeepScatter);
 }
 
-CBaseCamera* CSceneTest::Camera()
+CBaseCamera *CSceneTest::Camera()
 {
 	return &m_camera;
 }
 
-void CSceneTest::GetBounds(XMFLOAT3 * pPosMin, XMFLOAT3 * pPosMax)
+void CSceneTest::GetBounds(XMFLOAT3 *pPosMin, XMFLOAT3 *pPosMax)
 {
 	assert(pPosMin);
 	assert(pPosMax);
@@ -429,7 +465,7 @@ void CSceneTest::GetBounds(XMFLOAT3 * pPosMin, XMFLOAT3 * pPosMax)
 	XMStoreFloat3(pPosMax, posMax);
 }
 
-void CSceneTest::GetMeshesToDraw(std::vector<MeshToDraw> * pMeshesToDraw)
+void CSceneTest::GetMeshesToDraw(std::vector<MeshToDraw> *pMeshesToDraw)
 {
 	assert(pMeshesToDraw);
 
@@ -439,32 +475,40 @@ void CSceneTest::GetMeshesToDraw(std::vector<MeshToDraw> * pMeshesToDraw)
 
 	// Generate draw records
 
-	MeshToDraw aMtd[] = 
-	{
-		{ &m_mtl, &m_meshShadower, 0, 1.0f, },
-		{ &m_mtl, &m_meshPlanes, 0, 1.0f, },
-	};
+	MeshToDraw aMtd[] =
+		{
+			{
+				&m_mtl,
+				&m_meshShadower,
+				0,
+				1.0f,
+			},
+			{
+				&m_mtl,
+				&m_meshPlanes,
+				0,
+				1.0f,
+			},
+		};
 	pMeshesToDraw->assign(&aMtd[0], &aMtd[dim(aMtd)]);
 
 	for (int i = 0; i < dim(m_aMeshSpheres); ++i)
 	{
-		MeshToDraw mtd = { &m_mtl, &m_aMeshSpheres[i], 0, 1.0f };
+		MeshToDraw mtd = {&m_mtl, &m_aMeshSpheres[i], 0, 1.0f};
 		pMeshesToDraw->push_back(mtd);
 	}
 }
 
-
-
 // CSceneHand implementation
 
 CSceneHand::CSceneHand()
-:	m_meshHand(),
-	m_pSrvDiffuse(nullptr),
-	m_pSrvNormalFlat(nullptr),
-	m_pSrvSpec(nullptr),
-	m_pSrvDeepScatter(nullptr),
-	m_mtl(),
-	m_camera()
+	: m_meshHand(),
+	  m_pSrvDiffuse(nullptr),
+	  m_pSrvNormalFlat(nullptr),
+	  m_pSrvSpec(nullptr),
+	  m_pSrvDeepScatter(nullptr),
+	  m_mtl(),
+	  m_camera()
 {
 }
 
@@ -472,7 +516,7 @@ HRESULT CSceneHand::Init()
 {
 	HRESULT hr;
 	wchar_t strPath[MAX_PATH];
-	ID3D11Device * pDevice = DXUTGetD3D11Device();
+	ID3D11Device *pDevice = DXUTGetD3D11Device();
 
 	// Load meshes
 
@@ -481,7 +525,7 @@ HRESULT CSceneHand::Init()
 
 	// Create 1x1 textures
 
-	m_pSrvDiffuse = Create1x1Texture(0.773f, 0.540f, 0.442f);	// caucasian skin color
+	m_pSrvDiffuse = Create1x1Texture(0.773f, 0.540f, 0.442f); // caucasian skin color
 	m_pSrvNormalFlat = Create1x1Texture(0.5f, 0.5f, 1.0f, true);
 	m_pSrvSpec = Create1x1Texture(0.05f, 0.05f, 0.05f, true);
 	m_pSrvDeepScatter = Create1x1Texture(1.0f, 0.25f, 0.0f);
@@ -489,10 +533,14 @@ HRESULT CSceneHand::Init()
 	// Set up material
 
 	m_mtl.m_shader = SHADER_Skin;
-	m_mtl.m_aSrv[0] = m_pSrvDiffuse;		m_mtl.m_textureSlots[0] = TEX_DIFFUSE0;
-	m_mtl.m_aSrv[1] = m_pSrvNormalFlat;		m_mtl.m_textureSlots[1] = TEX_NORMAL;
-	m_mtl.m_aSrv[2] = m_pSrvSpec;			m_mtl.m_textureSlots[2] = TEX_SPEC;
-	m_mtl.m_aSrv[3] = m_pSrvDeepScatter;	m_mtl.m_textureSlots[3] = TEX_DEEP_SCATTER_COLOR;
+	m_mtl.m_aSrv[0] = m_pSrvDiffuse;
+	m_mtl.m_textureSlots[0] = TEX_DIFFUSE0;
+	m_mtl.m_aSrv[1] = m_pSrvNormalFlat;
+	m_mtl.m_textureSlots[1] = TEX_NORMAL;
+	m_mtl.m_aSrv[2] = m_pSrvSpec;
+	m_mtl.m_textureSlots[2] = TEX_SPEC;
+	m_mtl.m_aSrv[3] = m_pSrvDeepScatter;
+	m_mtl.m_textureSlots[3] = TEX_DEEP_SCATTER_COLOR;
 	m_mtl.m_constants[0] = g_normalStrength;
 	m_mtl.m_constants[1] = g_glossSkin;
 
@@ -515,12 +563,12 @@ void CSceneHand::Release()
 	SAFE_RELEASE(m_pSrvDeepScatter);
 }
 
-CBaseCamera* CSceneHand::Camera()
+CBaseCamera *CSceneHand::Camera()
 {
 	return &m_camera;
 }
 
-void CSceneHand::GetBounds(XMFLOAT3 * pPosMin, XMFLOAT3 * pPosMax)
+void CSceneHand::GetBounds(XMFLOAT3 *pPosMin, XMFLOAT3 *pPosMax)
 {
 	assert(pPosMin);
 	assert(pPosMax);
@@ -529,7 +577,7 @@ void CSceneHand::GetBounds(XMFLOAT3 * pPosMin, XMFLOAT3 * pPosMax)
 	*pPosMax = m_meshHand.m_posMax;
 }
 
-void CSceneHand::GetMeshesToDraw(std::vector<MeshToDraw> * pMeshesToDraw)
+void CSceneHand::GetMeshesToDraw(std::vector<MeshToDraw> *pMeshesToDraw)
 {
 	assert(pMeshesToDraw);
 
@@ -539,26 +587,29 @@ void CSceneHand::GetMeshesToDraw(std::vector<MeshToDraw> * pMeshesToDraw)
 
 	// Generate draw records
 
-	MeshToDraw aMtd[] = 
-	{
-		{ &m_mtl, &m_meshHand, 0, 1.0f, },
-	};
+	MeshToDraw aMtd[] =
+		{
+			{
+				&m_mtl,
+				&m_meshHand,
+				0,
+				1.0f,
+			},
+		};
 	pMeshesToDraw->assign(&aMtd[0], &aMtd[dim(aMtd)]);
 }
-
-
 
 // CSceneDragon implementation
 
 CSceneDragon::CSceneDragon()
-:	m_meshDragon(),
-	m_pSrvDiffuse(nullptr),
-	m_pSrvNormal(nullptr),
-	m_pSrvSpec(nullptr),
-	m_pSrvDeepScatter(nullptr),
-	m_mtl(),
-	m_camera(),
-	m_normalSize(0)
+	: m_meshDragon(),
+	  m_pSrvDiffuse(nullptr),
+	  m_pSrvNormal(nullptr),
+	  m_pSrvSpec(nullptr),
+	  m_pSrvDeepScatter(nullptr),
+	  m_mtl(),
+	  m_camera(),
+	  m_normalSize(0)
 {
 }
 
@@ -566,7 +617,7 @@ HRESULT CSceneDragon::Init()
 {
 	HRESULT hr;
 	wchar_t strPath[MAX_PATH];
-	ID3D11Device * pDevice = DXUTGetD3D11Device();
+	ID3D11Device *pDevice = DXUTGetD3D11Device();
 	ID3D11DeviceContext *pDeviceContext = DXUTGetD3D11DeviceContext();
 
 	// Load meshes
@@ -591,10 +642,14 @@ HRESULT CSceneDragon::Init()
 	// Set up materials
 
 	m_mtl.m_shader = SHADER_Skin;
-	m_mtl.m_aSrv[0] = m_pSrvDiffuse;		m_mtl.m_textureSlots[0] = TEX_DIFFUSE0;
-	m_mtl.m_aSrv[1] = m_pSrvNormal;			m_mtl.m_textureSlots[1] = TEX_NORMAL;
-	m_mtl.m_aSrv[2] = m_pSrvSpec;			m_mtl.m_textureSlots[2] = TEX_SPEC;
-	m_mtl.m_aSrv[3] = m_pSrvDeepScatter;	m_mtl.m_textureSlots[3] = TEX_DEEP_SCATTER_COLOR;
+	m_mtl.m_aSrv[0] = m_pSrvDiffuse;
+	m_mtl.m_textureSlots[0] = TEX_DIFFUSE0;
+	m_mtl.m_aSrv[1] = m_pSrvNormal;
+	m_mtl.m_textureSlots[1] = TEX_NORMAL;
+	m_mtl.m_aSrv[2] = m_pSrvSpec;
+	m_mtl.m_textureSlots[2] = TEX_SPEC;
+	m_mtl.m_aSrv[3] = m_pSrvDeepScatter;
+	m_mtl.m_textureSlots[3] = TEX_DEEP_SCATTER_COLOR;
 	m_mtl.m_constants[0] = g_normalStrength;
 	m_mtl.m_constants[1] = g_glossSkin;
 
@@ -621,7 +676,7 @@ void CSceneDragon::Release()
 	SAFE_RELEASE(m_pSrvDeepScatter);
 }
 
-void CSceneDragon::GetBounds(XMFLOAT3 * pPosMin, XMFLOAT3 * pPosMax)
+void CSceneDragon::GetBounds(XMFLOAT3 *pPosMin, XMFLOAT3 *pPosMax)
 {
 	assert(pPosMin);
 	assert(pPosMax);
@@ -630,7 +685,7 @@ void CSceneDragon::GetBounds(XMFLOAT3 * pPosMin, XMFLOAT3 * pPosMax)
 	*pPosMax = m_meshDragon.m_posMax;
 }
 
-void CSceneDragon::GetMeshesToDraw(std::vector<MeshToDraw> * pMeshesToDraw)
+void CSceneDragon::GetMeshesToDraw(std::vector<MeshToDraw> *pMeshesToDraw)
 {
 	assert(pMeshesToDraw);
 
@@ -640,26 +695,29 @@ void CSceneDragon::GetMeshesToDraw(std::vector<MeshToDraw> * pMeshesToDraw)
 
 	// Generate draw records
 
-	MeshToDraw aMtd[] = 
-	{
-		{ &m_mtl, &m_meshDragon, m_normalSize, m_meshDragon.m_uvScale, },
-	};
+	MeshToDraw aMtd[] =
+		{
+			{
+				&m_mtl,
+				&m_meshDragon,
+				m_normalSize,
+				m_meshDragon.m_uvScale,
+			},
+		};
 	pMeshesToDraw->assign(&aMtd[0], &aMtd[dim(aMtd)]);
 }
-
-
 
 // CSceneLPSHead implementation
 
 CSceneLPSHead::CSceneLPSHead()
-:	m_meshHead(),
-	m_pSrvDiffuseHead(nullptr),
-	m_pSrvNormalHead(nullptr),
-	m_pSrvSpecHead(nullptr),
-	m_pSrvDeepScatterHead(nullptr),
-	m_mtlHead(),
-	m_camera(),
-	m_normalHeadSize(0)
+	: m_meshHead(),
+	  m_pSrvDiffuseHead(nullptr),
+	  m_pSrvNormalHead(nullptr),
+	  m_pSrvSpecHead(nullptr),
+	  m_pSrvDeepScatterHead(nullptr),
+	  m_mtlHead(),
+	  m_camera(),
+	  m_normalHeadSize(0)
 {
 }
 
@@ -667,7 +725,7 @@ HRESULT CSceneLPSHead::Init()
 {
 	HRESULT hr;
 	wchar_t strPath[MAX_PATH];
-	ID3D11Device * pDevice = DXUTGetD3D11Device();
+	ID3D11Device *pDevice = DXUTGetD3D11Device();
 	ID3D11DeviceContext *pDeviceContext = DXUTGetD3D11DeviceContext();
 
 	// Load meshes
@@ -689,18 +747,22 @@ HRESULT CSceneLPSHead::Init()
 	// Create 1x1 spec texture
 
 	m_pSrvSpecHead = Create1x1Texture(
-						g_specReflectanceSkinDefault,
-						g_specReflectanceSkinDefault,
-						g_specReflectanceSkinDefault,
-						true);
+		g_specReflectanceSkinDefault,
+		g_specReflectanceSkinDefault,
+		g_specReflectanceSkinDefault,
+		true);
 
 	// Set up materials
 
 	m_mtlHead.m_shader = SHADER_Skin;
-	m_mtlHead.m_aSrv[0] = m_pSrvDiffuseHead;		m_mtlHead.m_textureSlots[0] = TEX_DIFFUSE0;
-	m_mtlHead.m_aSrv[1] = m_pSrvNormalHead;			m_mtlHead.m_textureSlots[1] = TEX_NORMAL;
-	m_mtlHead.m_aSrv[2] = m_pSrvSpecHead;			m_mtlHead.m_textureSlots[2] = TEX_SPEC;
-	m_mtlHead.m_aSrv[3] = m_pSrvDeepScatterHead;	m_mtlHead.m_textureSlots[3] = TEX_DEEP_SCATTER_COLOR;
+	m_mtlHead.m_aSrv[0] = m_pSrvDiffuseHead;
+	m_mtlHead.m_textureSlots[0] = TEX_DIFFUSE0;
+	m_mtlHead.m_aSrv[1] = m_pSrvNormalHead;
+	m_mtlHead.m_textureSlots[1] = TEX_NORMAL;
+	m_mtlHead.m_aSrv[2] = m_pSrvSpecHead;
+	m_mtlHead.m_textureSlots[2] = TEX_SPEC;
+	m_mtlHead.m_aSrv[3] = m_pSrvDeepScatterHead;
+	m_mtlHead.m_textureSlots[3] = TEX_DEEP_SCATTER_COLOR;
 	m_mtlHead.m_constants[0] = g_normalStrength;
 
 	// Set up camera to orbit around the head
@@ -726,7 +788,7 @@ void CSceneLPSHead::Release()
 	SAFE_RELEASE(m_pSrvDeepScatterHead);
 }
 
-void CSceneLPSHead::GetBounds(XMFLOAT3 * pPosMin, XMFLOAT3 * pPosMax)
+void CSceneLPSHead::GetBounds(XMFLOAT3 *pPosMin, XMFLOAT3 *pPosMax)
 {
 	assert(pPosMin);
 	assert(pPosMax);
@@ -735,7 +797,7 @@ void CSceneLPSHead::GetBounds(XMFLOAT3 * pPosMin, XMFLOAT3 * pPosMax)
 	*pPosMax = m_meshHead.m_posMax;
 }
 
-void CSceneLPSHead::GetMeshesToDraw(std::vector<MeshToDraw> * pMeshesToDraw)
+void CSceneLPSHead::GetMeshesToDraw(std::vector<MeshToDraw> *pMeshesToDraw)
 {
 	assert(pMeshesToDraw);
 
@@ -745,27 +807,30 @@ void CSceneLPSHead::GetMeshesToDraw(std::vector<MeshToDraw> * pMeshesToDraw)
 
 	// Generate draw records
 
-	MeshToDraw aMtd[] = 
-	{
-		{ &m_mtlHead, &m_meshHead, m_normalHeadSize, m_meshHead.m_uvScale, },
-	};
+	MeshToDraw aMtd[] =
+		{
+			{
+				&m_mtlHead,
+				&m_meshHead,
+				m_normalHeadSize,
+				m_meshHead.m_uvScale,
+			},
+		};
 
 	pMeshesToDraw->assign(&aMtd[0], &aMtd[dim(aMtd)]);
 }
 
-
-
 // CSceneManjaladon implementation
 
 CSceneManjaladon::CSceneManjaladon()
-:	m_meshManjaladon(),
-	m_pSrvDiffuse(nullptr),
-	m_pSrvNormal(nullptr),
-	m_pSrvSpec(nullptr),
-	m_pSrvDeepScatter(nullptr),
-	m_mtl(),
-	m_camera(),
-	m_normalSize(0)
+	: m_meshManjaladon(),
+	  m_pSrvDiffuse(nullptr),
+	  m_pSrvNormal(nullptr),
+	  m_pSrvSpec(nullptr),
+	  m_pSrvDeepScatter(nullptr),
+	  m_mtl(),
+	  m_camera(),
+	  m_normalSize(0)
 {
 }
 
@@ -773,7 +838,7 @@ HRESULT CSceneManjaladon::Init()
 {
 	HRESULT hr;
 	wchar_t strPath[MAX_PATH];
-	ID3D11Device * pDevice = DXUTGetD3D11Device();
+	ID3D11Device *pDevice = DXUTGetD3D11Device();
 	ID3D11DeviceContext *pDeviceContext = DXUTGetD3D11DeviceContext();
 
 	// Load meshes
@@ -798,10 +863,14 @@ HRESULT CSceneManjaladon::Init()
 	// Set up materials
 
 	m_mtl.m_shader = SHADER_Skin;
-	m_mtl.m_aSrv[0] = m_pSrvDiffuse;		m_mtl.m_textureSlots[0] = TEX_DIFFUSE0;
-	m_mtl.m_aSrv[1] = m_pSrvNormal;			m_mtl.m_textureSlots[1] = TEX_NORMAL;
-	m_mtl.m_aSrv[2] = m_pSrvSpec;			m_mtl.m_textureSlots[2] = TEX_SPEC;
-	m_mtl.m_aSrv[3] = m_pSrvDeepScatter;	m_mtl.m_textureSlots[3] = TEX_DEEP_SCATTER_COLOR;
+	m_mtl.m_aSrv[0] = m_pSrvDiffuse;
+	m_mtl.m_textureSlots[0] = TEX_DIFFUSE0;
+	m_mtl.m_aSrv[1] = m_pSrvNormal;
+	m_mtl.m_textureSlots[1] = TEX_NORMAL;
+	m_mtl.m_aSrv[2] = m_pSrvSpec;
+	m_mtl.m_textureSlots[2] = TEX_SPEC;
+	m_mtl.m_aSrv[3] = m_pSrvDeepScatter;
+	m_mtl.m_textureSlots[3] = TEX_DEEP_SCATTER_COLOR;
 	m_mtl.m_constants[0] = g_normalStrength;
 	m_mtl.m_constants[1] = g_glossSkin;
 
@@ -828,7 +897,7 @@ void CSceneManjaladon::Release()
 	SAFE_RELEASE(m_pSrvDeepScatter);
 }
 
-void CSceneManjaladon::GetBounds(XMFLOAT3 * pPosMin, XMFLOAT3 * pPosMax)
+void CSceneManjaladon::GetBounds(XMFLOAT3 *pPosMin, XMFLOAT3 *pPosMax)
 {
 	assert(pPosMin);
 	assert(pPosMax);
@@ -837,7 +906,7 @@ void CSceneManjaladon::GetBounds(XMFLOAT3 * pPosMin, XMFLOAT3 * pPosMax)
 	*pPosMax = m_meshManjaladon.m_posMax;
 }
 
-void CSceneManjaladon::GetMeshesToDraw(std::vector<MeshToDraw> * pMeshesToDraw)
+void CSceneManjaladon::GetMeshesToDraw(std::vector<MeshToDraw> *pMeshesToDraw)
 {
 	assert(pMeshesToDraw);
 
@@ -847,36 +916,39 @@ void CSceneManjaladon::GetMeshesToDraw(std::vector<MeshToDraw> * pMeshesToDraw)
 
 	// Generate draw records
 
-	MeshToDraw aMtd[] = 
-	{
-		{ &m_mtl, &m_meshManjaladon, m_normalSize, m_meshManjaladon.m_uvScale, },
-	};
+	MeshToDraw aMtd[] =
+		{
+			{
+				&m_mtl,
+				&m_meshManjaladon,
+				m_normalSize,
+				m_meshManjaladon.m_uvScale,
+			},
+		};
 	pMeshesToDraw->assign(&aMtd[0], &aMtd[dim(aMtd)]);
 }
-
-
 
 // CSceneWarriorHead implementation
 
 CSceneWarriorHead::CSceneWarriorHead()
-:	m_meshHead(),
-	m_meshEyeL(),
-	m_meshEyeR(),
-	m_meshLashes(),
-	m_pSrvDiffuseHead(nullptr),
-	m_pSrvNormalHead(nullptr),
-	m_pSrvSpecHead(nullptr),
-	m_pSrvDeepScatterHead(nullptr),
-	m_pSrvDiffuseEyeSclera(nullptr),
-	m_pSrvNormalEyeSclera(nullptr),
-	m_pSrvDiffuseEyeIris(nullptr),
-	m_pSrvDiffuseLashes(nullptr),
-	m_mtlHead(),
-	m_mtlEye(),
-	m_mtlLashes(),
-	m_camera(),
-	m_normalHeadSize(0),
-	m_normalEyeSize(0)
+	: m_meshHead(),
+	  m_meshEyeL(),
+	  m_meshEyeR(),
+	  m_meshLashes(),
+	  m_pSrvDiffuseHead(nullptr),
+	  m_pSrvNormalHead(nullptr),
+	  m_pSrvSpecHead(nullptr),
+	  m_pSrvDeepScatterHead(nullptr),
+	  m_pSrvDiffuseEyeSclera(nullptr),
+	  m_pSrvNormalEyeSclera(nullptr),
+	  m_pSrvDiffuseEyeIris(nullptr),
+	  m_pSrvDiffuseLashes(nullptr),
+	  m_mtlHead(),
+	  m_mtlEye(),
+	  m_mtlLashes(),
+	  m_camera(),
+	  m_normalHeadSize(0),
+	  m_normalEyeSize(0)
 {
 }
 
@@ -884,7 +956,7 @@ HRESULT CSceneWarriorHead::Init()
 {
 	HRESULT hr;
 	wchar_t strPath[MAX_PATH];
-	ID3D11Device * pDevice = DXUTGetD3D11Device();
+	ID3D11Device *pDevice = DXUTGetD3D11Device();
 	ID3D11DeviceContext *pDeviceContext = DXUTGetD3D11DeviceContext();
 
 	// Load meshes
@@ -927,38 +999,46 @@ HRESULT CSceneWarriorHead::Init()
 	// Create 1x1 spec texture
 
 	m_pSrvSpecHead = Create1x1Texture(
-						g_specReflectanceSkinDefault,
-						g_specReflectanceSkinDefault,
-						g_specReflectanceSkinDefault,
-						true);
+		g_specReflectanceSkinDefault,
+		g_specReflectanceSkinDefault,
+		g_specReflectanceSkinDefault,
+		true);
 
 	// Set up materials
 
 	m_mtlHead.m_shader = SHADER_Skin;
-	m_mtlHead.m_aSrv[0] = m_pSrvDiffuseHead;		m_mtlHead.m_textureSlots[0] = TEX_DIFFUSE0;
-	m_mtlHead.m_aSrv[1] = m_pSrvNormalHead;			m_mtlHead.m_textureSlots[1] = TEX_NORMAL;
-	m_mtlHead.m_aSrv[2] = m_pSrvSpecHead;			m_mtlHead.m_textureSlots[2] = TEX_SPEC;
-	m_mtlHead.m_aSrv[3] = m_pSrvDeepScatterHead;	m_mtlHead.m_textureSlots[3] = TEX_DEEP_SCATTER_COLOR;
+	m_mtlHead.m_aSrv[0] = m_pSrvDiffuseHead;
+	m_mtlHead.m_textureSlots[0] = TEX_DIFFUSE0;
+	m_mtlHead.m_aSrv[1] = m_pSrvNormalHead;
+	m_mtlHead.m_textureSlots[1] = TEX_NORMAL;
+	m_mtlHead.m_aSrv[2] = m_pSrvSpecHead;
+	m_mtlHead.m_textureSlots[2] = TEX_SPEC;
+	m_mtlHead.m_aSrv[3] = m_pSrvDeepScatterHead;
+	m_mtlHead.m_textureSlots[3] = TEX_DEEP_SCATTER_COLOR;
 	m_mtlHead.m_constants[0] = g_normalStrength;
 	m_mtlHead.m_constants[1] = g_glossSkin;
 
 	m_mtlEye.m_shader = SHADER_Eye;
-	m_mtlEye.m_aSrv[0] = m_pSrvDiffuseEyeSclera;	m_mtlEye.m_textureSlots[0] = TEX_DIFFUSE0;
-	m_mtlEye.m_aSrv[1] = m_pSrvDiffuseEyeIris;		m_mtlEye.m_textureSlots[1] = TEX_DIFFUSE1;
-	m_mtlEye.m_aSrv[2] = m_pSrvNormalEyeSclera;		m_mtlEye.m_textureSlots[2] = TEX_NORMAL;
-	m_mtlEye.m_constants[0] = 0.05f;	// normal strength
+	m_mtlEye.m_aSrv[0] = m_pSrvDiffuseEyeSclera;
+	m_mtlEye.m_textureSlots[0] = TEX_DIFFUSE0;
+	m_mtlEye.m_aSrv[1] = m_pSrvDiffuseEyeIris;
+	m_mtlEye.m_textureSlots[1] = TEX_DIFFUSE1;
+	m_mtlEye.m_aSrv[2] = m_pSrvNormalEyeSclera;
+	m_mtlEye.m_textureSlots[2] = TEX_NORMAL;
+	m_mtlEye.m_constants[0] = 0.05f; // normal strength
 	m_mtlEye.m_constants[1] = g_specReflectanceEye;
 	m_mtlEye.m_constants[2] = g_glossEye;
 	m_mtlEye.m_constants[4] = g_rgbDeepScatterEye[0];
 	m_mtlEye.m_constants[5] = g_rgbDeepScatterEye[1];
 	m_mtlEye.m_constants[6] = g_rgbDeepScatterEye[2];
-	m_mtlEye.m_constants[7] = 0.200f;	// Radius of iris in iris texture (in UV units)
-	m_mtlEye.m_constants[8] = 0.205f;	// Radius of iris in schlera texture (in UV units)
-	m_mtlEye.m_constants[9] = 30.0f;	// Controls hardness/softness of iris edge
-	m_mtlEye.m_constants[10] = 0.0f;	// How much the iris is dilated
+	m_mtlEye.m_constants[7] = 0.200f; // Radius of iris in iris texture (in UV units)
+	m_mtlEye.m_constants[8] = 0.205f; // Radius of iris in schlera texture (in UV units)
+	m_mtlEye.m_constants[9] = 30.0f;  // Controls hardness/softness of iris edge
+	m_mtlEye.m_constants[10] = 0.0f;  // How much the iris is dilated
 
 	m_mtlLashes.m_shader = SHADER_Hair;
-	m_mtlLashes.m_aSrv[0] = m_pSrvDiffuseLashes;	m_mtlLashes.m_textureSlots[0] = TEX_DIFFUSE0;
+	m_mtlLashes.m_aSrv[0] = m_pSrvDiffuseLashes;
+	m_mtlLashes.m_textureSlots[0] = TEX_DIFFUSE0;
 	m_mtlLashes.m_constants[0] = g_specReflectanceHair;
 	m_mtlLashes.m_constants[1] = g_glossHair;
 
@@ -995,7 +1075,7 @@ void CSceneWarriorHead::Release()
 	SAFE_RELEASE(m_pSrvDiffuseLashes);
 }
 
-void CSceneWarriorHead::GetBounds(XMFLOAT3 * pPosMin, XMFLOAT3 * pPosMax)
+void CSceneWarriorHead::GetBounds(XMFLOAT3 *pPosMin, XMFLOAT3 *pPosMax)
 {
 	assert(pPosMin);
 	assert(pPosMax);
@@ -1004,7 +1084,7 @@ void CSceneWarriorHead::GetBounds(XMFLOAT3 * pPosMin, XMFLOAT3 * pPosMax)
 	*pPosMax = m_meshHead.m_posMax;
 }
 
-void CSceneWarriorHead::GetMeshesToDraw(std::vector<MeshToDraw> * pMeshesToDraw)
+void CSceneWarriorHead::GetMeshesToDraw(std::vector<MeshToDraw> *pMeshesToDraw)
 {
 	assert(pMeshesToDraw);
 
@@ -1023,38 +1103,54 @@ void CSceneWarriorHead::GetMeshesToDraw(std::vector<MeshToDraw> * pMeshesToDraw)
 
 	// Generate draw records
 
-	MeshToDraw aMtd[] = 
-	{
-		{ &m_mtlHead, &m_meshHead, m_normalHeadSize, m_meshHead.m_uvScale, },
-		{ &m_mtlEye, &m_meshEyeL, m_normalEyeSize, m_meshEyeL.m_uvScale, },
-		{ &m_mtlEye, &m_meshEyeR, m_normalEyeSize, m_meshEyeR.m_uvScale, },
-		{ &m_mtlLashes, &m_meshLashes, },
-	};
+	MeshToDraw aMtd[] =
+		{
+			{
+				&m_mtlHead,
+				&m_meshHead,
+				m_normalHeadSize,
+				m_meshHead.m_uvScale,
+			},
+			{
+				&m_mtlEye,
+				&m_meshEyeL,
+				m_normalEyeSize,
+				m_meshEyeL.m_uvScale,
+			},
+			{
+				&m_mtlEye,
+				&m_meshEyeR,
+				m_normalEyeSize,
+				m_meshEyeR.m_uvScale,
+			},
+			{
+				&m_mtlLashes,
+				&m_meshLashes,
+			},
+		};
 
 	pMeshesToDraw->assign(&aMtd[0], &aMtd[dim(aMtd)]);
 }
 
-
-
 // CBackground implementation
 
 CBackground::CBackground()
-:	m_pSrvCubeEnv(nullptr),
-	m_pSrvCubeDiff(nullptr),
-	m_pSrvCubeSpec(nullptr),
-	m_exposure(0.0f)
+	: m_pSrvCubeEnv(nullptr),
+	  m_pSrvCubeDiff(nullptr),
+	  m_pSrvCubeSpec(nullptr),
+	  m_exposure(0.0f)
 {
 }
 
 HRESULT CBackground::Init(
-	const wchar_t * strCubeEnv,
-	const wchar_t * strCubeDiff,
-	const wchar_t * strCubeSpec,
+	const wchar_t *strCubeEnv,
+	const wchar_t *strCubeDiff,
+	const wchar_t *strCubeSpec,
 	float exposure /* = 1.0f */)
 {
 	HRESULT hr;
 	wchar_t strPath[MAX_PATH];
-	ID3D11Device * pDevice = DXUTGetD3D11Device();
+	ID3D11Device *pDevice = DXUTGetD3D11Device();
 	ID3D11DeviceContext *pDeviceContext = DXUTGetD3D11DeviceContext();
 
 	V_RETURN(DXUTFindDXSDKMediaFileCch(strPath, dim(strPath), strCubeEnv));

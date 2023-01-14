@@ -39,29 +39,27 @@
 #include "lighting.hlsli"
 #include "GFSDK_FaceWorks.hlsli"
 
-#pragma warning(disable: 3571)	// pow() doesn't handle negative numbers
+#pragma warning(disable : 3571) // pow() doesn't handle negative numbers
 
 cbuffer cbShader : CB_SHADER
 {
-	float		g_normalStrength;
-	float		g_specReflectance;
-	float		g_gloss;
-	float3		g_rgbDeepScatter;
+	float g_normalStrength;
+	float g_specReflectance;
+	float g_gloss;
+	float3 g_rgbDeepScatter;
 
 	// Iris parameters
-	float		g_irisRadiusSource;		// Radius of iris in iris texture (in UV units)
-	float		g_irisRadiusDest;		// Radius of iris in schlera texture (in UV units)
-	float		g_irisEdgeHardness;		// Controls hardness/softness of iris edge
-	float		g_irisDilation;			// How much the iris is dilated
+	float g_irisRadiusSource; // Radius of iris in iris texture (in UV units)
+	float g_irisRadiusDest;	  // Radius of iris in schlera texture (in UV units)
+	float g_irisEdgeHardness; // Controls hardness/softness of iris edge
+	float g_irisDilation;	  // How much the iris is dilated
 
-	GFSDK_FaceWorks_CBData	g_faceworksData;
+	GFSDK_FaceWorks_CBData g_faceworksData;
 }
 
-Texture2D<float3> g_texDiffuseSclera	: TEX_DIFFUSE0;
-Texture2D<float3> g_texDiffuseIris		: TEX_DIFFUSE1;
-Texture2D<float3> g_texNormal			: TEX_NORMAL;
-
-
+Texture2D<float3> g_texDiffuseSclera : TEX_DIFFUSE0;
+Texture2D<float3> g_texDiffuseIris : TEX_DIFFUSE1;
+Texture2D<float3> g_texNormal : TEX_NORMAL;
 
 void EyeMegashader(
 	in Vertex i_vtx,
@@ -101,10 +99,10 @@ void EyeMegashader(
 	{
 		// Sample normal map with level clamped based on blur, to get normal for SSS
 		float level = GFSDK_FaceWorks_CalculateMipLevelForBlurredNormal(
-						g_faceworksData, g_texNormal, g_ssTrilinearRepeatAniso, uv);
+			g_faceworksData, g_texNormal, g_ssTrilinearRepeatAniso, uv);
 		normalTangentBlurred = UnpackNormal(
-									g_texNormal.SampleLevel(g_ssTrilinearRepeatAniso, uv, level),
-									g_normalStrength);
+			g_texNormal.SampleLevel(g_ssTrilinearRepeatAniso, uv, level),
+			g_normalStrength);
 	}
 
 	// Lerp normals to flat, and gloss to 1.0 in the iris region
@@ -124,7 +122,7 @@ void EyeMegashader(
 		g_rgbDeepScatter,
 		g_faceworksData,
 		o_rgbLit,
-		true,	// useNormalMap
+		true, // useNormalMap
 		useSSS,
 		useDeepScatter);
 }

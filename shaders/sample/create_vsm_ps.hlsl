@@ -36,8 +36,9 @@
 
 Texture2D<float> g_texSource : TEX_SOURCE;
 
-float2 main(in float2 i_uv : UV) : SV_Target
+float2 main(in float2 i_uv
+			: UV) : SV_Target
 {
 	float z = g_texSource.Sample(g_ssPointClamp, i_uv);
-	return float2(z, z*z);
+	return float2(z, z * z);
 }

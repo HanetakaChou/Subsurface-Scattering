@@ -46,8 +46,6 @@ struct GFSDK_FaceWorks_CBData
 	float4 data[3];
 };
 
-
-
 // =================================================================================
 //	Shader API for SSS
 // =================================================================================
@@ -104,7 +102,7 @@ float GFSDK_FaceWorks_CalculateMipLevelForBlurredNormal(
 /// \param normalShade		[in] the shading normal
 /// \param normalBlurred	[in] the blurred shading normal
 /// \param vecToLight		[in] the normalized vector toward light
-/// \param curvature		[in] curvature of the surface being shaded (interpolated from precomputed 
+/// \param curvature		[in] curvature of the surface being shaded (interpolated from precomputed
 /// 						per-vertex values)
 /// \param texCurvatureLUT	[in] the texture containing curvature look up table
 /// \param ssBilinearClamp	[in] the sampler state
@@ -151,7 +149,7 @@ float GFSDK_FaceWorks_SharpenShadow(
 
 /// Calculate three normals at which to sample diffuse ambient light (such as SH light or
 /// a preconvolved cubemap) for SSS ambient light.
-/// 
+///
 /// \param normalShade		[in] the shading normal
 /// \param normalBlurred	[in] the blurred shading normal
 /// \param o_normalAmbient0	[out] first normal at which to sample diffuse ambient light
@@ -174,8 +172,6 @@ float3 GFSDK_FaceWorks_EvaluateSSSAmbientLight(
 	float3 rgbAmbient0,
 	float3 rgbAmbient1,
 	float3 rgbAmbient2);
-
-
 
 // =================================================================================
 //	Shader API for deep scatter
@@ -252,8 +248,6 @@ float GFSDK_FaceWorks_EvaluateDeepScatterDirectLight(
 	float3 vecToLight,
 	float thickness);
 
-
-
 // ======================================================================================
 //	Implementation
 // ======================================================================================
@@ -262,14 +256,14 @@ float GFSDK_FaceWorks_EvaluateDeepScatterDirectLight(
 struct nvsf_CBData
 {
 	// SSS constants
-	float2	nvsf_CurvatureScaleBias;
-	float2	nvsf_ShadowScaleBias;
-	float	nvsf_MinLevelForBlurredNormal;
+	float2 nvsf_CurvatureScaleBias;
+	float2 nvsf_ShadowScaleBias;
+	float nvsf_MinLevelForBlurredNormal;
 
 	// Deep scatter constants
-	float	nvsf_DeepScatterFalloff;
-	float	nvsf_ShadowFilterRadius;
-	float	nvsf_DecodeDepthScale, nvsf_DecodeDepthBias;
+	float nvsf_DeepScatterFalloff;
+	float nvsf_ShadowFilterRadius;
+	float nvsf_DecodeDepthScale, nvsf_DecodeDepthBias;
 };
 
 nvsf_CBData nvsf_UnpackCBData(GFSDK_FaceWorks_CBData nvsf_opaqueData)
@@ -285,8 +279,6 @@ nvsf_CBData nvsf_UnpackCBData(GFSDK_FaceWorks_CBData nvsf_opaqueData)
 	return nvsf_out;
 }
 
-
-
 // ======================================================================================
 //	Shader API for SSS
 // ======================================================================================
@@ -299,7 +291,7 @@ float GFSDK_FaceWorks_CalculateMipLevelForBlurredNormal(
 {
 	nvsf_CBData nvsf_cb = nvsf_UnpackCBData(nvsf_opaqueData);
 	return max(nvsf_texNormal.CalculateLevelOfDetail(nvsf_ss, nvsf_uv),
-				nvsf_cb.nvsf_MinLevelForBlurredNormal);
+			   nvsf_cb.nvsf_MinLevelForBlurredNormal);
 }
 float GFSDK_FaceWorks_CalculateMipLevelForBlurredNormal(
 	GFSDK_FaceWorks_CBData nvsf_opaqueData,
@@ -309,7 +301,7 @@ float GFSDK_FaceWorks_CalculateMipLevelForBlurredNormal(
 {
 	nvsf_CBData nvsf_cb = nvsf_UnpackCBData(nvsf_opaqueData);
 	return max(nvsf_texNormal.CalculateLevelOfDetail(nvsf_ss, nvsf_uv),
-				nvsf_cb.nvsf_MinLevelForBlurredNormal);
+			   nvsf_cb.nvsf_MinLevelForBlurredNormal);
 }
 float GFSDK_FaceWorks_CalculateMipLevelForBlurredNormal(
 	GFSDK_FaceWorks_CBData nvsf_opaqueData,
@@ -319,7 +311,7 @@ float GFSDK_FaceWorks_CalculateMipLevelForBlurredNormal(
 {
 	nvsf_CBData nvsf_cb = nvsf_UnpackCBData(nvsf_opaqueData);
 	return max(nvsf_texNormal.CalculateLevelOfDetail(nvsf_ss, nvsf_uv),
-				nvsf_cb.nvsf_MinLevelForBlurredNormal);
+			   nvsf_cb.nvsf_MinLevelForBlurredNormal);
 }
 
 float3 GFSDK_FaceWorks_EvaluateSSSDirectLight(
@@ -337,7 +329,10 @@ float3 GFSDK_FaceWorks_EvaluateSSSDirectLight(
 	// Curvature-based scattering
 	float nvsf_NdotLBlurredUnclamped = dot(nvsf_normalBlurred, nvsf_vecToLight);
 	float nvsf_curvatureScaled = nvsf_curvature * nvsf_cb.nvsf_CurvatureScaleBias.x + nvsf_cb.nvsf_CurvatureScaleBias.y;
-	float2 nvsf_uvCurvatureLUT = { nvsf_NdotLBlurredUnclamped * 0.5 + 0.5, nvsf_curvatureScaled, };
+	float2 nvsf_uvCurvatureLUT = {
+		nvsf_NdotLBlurredUnclamped * 0.5 + 0.5,
+		nvsf_curvatureScaled,
+	};
 	float3 nvsf_rgbCurvature = nvsf_texCurvatureLUT.Sample(nvsf_ss, nvsf_uvCurvatureLUT).rgb * 0.5 - 0.25;
 
 	// Normal map scattering using separate normals for R, G, B; here, G and B
@@ -369,10 +364,10 @@ float3 GFSDK_FaceWorks_EvaluateSSSShadow(
 	// Shadow penumbra scattering
 	float nvsf_NdotLGeom = saturate(dot(nvsf_normalGeom, nvsf_vecToLight));
 	float2 nvsf_uvShadowLUT =
-	{
-		nvsf_shadow,
-		nvsf_NdotLGeom * nvsf_cb.nvsf_ShadowScaleBias.x + nvsf_cb.nvsf_ShadowScaleBias.y,
-	};
+		{
+			nvsf_shadow,
+			nvsf_NdotLGeom * nvsf_cb.nvsf_ShadowScaleBias.x + nvsf_cb.nvsf_ShadowScaleBias.y,
+		};
 	return nvsf_texShadowLUT.Sample(nvsf_ss, nvsf_uvShadowLUT).rgb;
 }
 
@@ -413,60 +408,79 @@ float3 GFSDK_FaceWorks_EvaluateSSSAmbientLight(
 	return nvsf_result;
 }
 
-
-
 // ======================================================================================
 //	Shader API for deep scatter
 // ======================================================================================
 
 // Poisson disks generated with http://www.coderhaus.com/?p=11
 
-static const float2 nvsf_Poisson8[] = 
-{ 	
-	{ -0.7494944f, 0.1827986f, },
-	{ -0.8572887f, -0.4169083f, },
-	{ -0.1087135f, -0.05238153f, },
-	{ 0.1045462f, 0.9657645f, },
-	{ -0.0135659f, -0.698451f, },
-	{ -0.4942278f, 0.7898396f, },
-	{ 0.7970678f, -0.4682421f, },
-	{ 0.8084122f, 0.533884f },
+static const float2 nvsf_Poisson8[] =
+	{
+		{
+			-0.7494944f,
+			0.1827986f,
+		},
+		{
+			-0.8572887f,
+			-0.4169083f,
+		},
+		{
+			-0.1087135f,
+			-0.05238153f,
+		},
+		{
+			0.1045462f,
+			0.9657645f,
+		},
+		{
+			-0.0135659f,
+			-0.698451f,
+		},
+		{
+			-0.4942278f,
+			0.7898396f,
+		},
+		{
+			0.7970678f,
+			-0.4682421f,
+		},
+		{0.8084122f, 0.533884f},
 };
 
-static const float2 nvsf_Poisson32[] = 
-{
-	{ -0.975402, -0.0711386 },
-	{ -0.920347, -0.41142 },
-	{ -0.883908, 0.217872 },
-	{ -0.884518, 0.568041 },
-	{ -0.811945, 0.90521 },
-	{ -0.792474, -0.779962 },
-	{ -0.614856, 0.386578 },
-	{ -0.580859, -0.208777 },
-	{ -0.53795, 0.716666 },
-	{ -0.515427, 0.0899991 },
-	{ -0.454634, -0.707938 },
-	{ -0.420942, 0.991272 },
-	{ -0.261147, 0.588488 },
-	{ -0.211219, 0.114841 },
-	{ -0.146336, -0.259194 },
-	{ -0.139439, -0.888668 },
-	{ 0.0116886, 0.326395 },
-	{ 0.0380566, 0.625477 },
-	{ 0.0625935, -0.50853 },
-	{ 0.125584, 0.0469069 },
-	{ 0.169469, -0.997253 },
-	{ 0.320597, 0.291055 },
-	{ 0.359172, -0.633717 },
-	{ 0.435713, -0.250832 },
-	{ 0.507797, -0.916562 },
-	{ 0.545763, 0.730216 },
-	{ 0.56859, 0.11655 },
-	{ 0.743156, -0.505173 },
-	{ 0.736442, -0.189734 },
-	{ 0.843562, 0.357036 },
-	{ 0.865413, 0.763726 },
-	{ 0.872005, -0.927 },
+static const float2 nvsf_Poisson32[] =
+	{
+		{-0.975402, -0.0711386},
+		{-0.920347, -0.41142},
+		{-0.883908, 0.217872},
+		{-0.884518, 0.568041},
+		{-0.811945, 0.90521},
+		{-0.792474, -0.779962},
+		{-0.614856, 0.386578},
+		{-0.580859, -0.208777},
+		{-0.53795, 0.716666},
+		{-0.515427, 0.0899991},
+		{-0.454634, -0.707938},
+		{-0.420942, 0.991272},
+		{-0.261147, 0.588488},
+		{-0.211219, 0.114841},
+		{-0.146336, -0.259194},
+		{-0.139439, -0.888668},
+		{0.0116886, 0.326395},
+		{0.0380566, 0.625477},
+		{0.0625935, -0.50853},
+		{0.125584, 0.0469069},
+		{0.169469, -0.997253},
+		{0.320597, 0.291055},
+		{0.359172, -0.633717},
+		{0.435713, -0.250832},
+		{0.507797, -0.916562},
+		{0.545763, 0.730216},
+		{0.56859, 0.11655},
+		{0.743156, -0.505173},
+		{0.736442, -0.189734},
+		{0.843562, 0.357036},
+		{0.865413, 0.763726},
+		{0.872005, -0.927},
 };
 
 float nvsf_LinearizePerspectiveDepth(nvsf_CBData nvsf_cb, float nvsf_depth)

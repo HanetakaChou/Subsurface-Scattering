@@ -36,13 +36,15 @@
 
 cbuffer cbShader : CB_SHADER
 {
-	float4x4	g_matClipToWorldAxes;
+	float4x4 g_matClipToWorldAxes;
 }
 
 void main(
 	in Vertex i_vtx,
-	out float3 o_vecView : VIEW,
-	out float4 o_posClip : SV_Position)
+	out float3 o_vecView
+	: VIEW,
+	  out float4 o_posClip
+	: SV_Position)
 {
 	// Set z = 1 to draw skybox at the back of the depth range
 	o_posClip = float4(i_vtx.m_pos.xy, 1.0, 1.0);

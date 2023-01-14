@@ -37,8 +37,8 @@
 
 struct PatchConstData
 {
-	float		m_tessFactor[3] : SV_TessFactor;
-	float		m_insideTessFactor : SV_InsideTessFactor;
+	float m_tessFactor[3] : SV_TessFactor;
+	float m_insideTessFactor : SV_InsideTessFactor;
 };
 
 static const float s_tessFactorMax = 3.0;

@@ -37,7 +37,8 @@
 
 TextureCube<float3> g_texSkybox : TEX_SOURCE;
 
-float3 main(in float3 i_vecView : VIEW) : SV_Target
+float3 main(in float3 i_vecView
+			: VIEW) : SV_Target
 {
 	return Tonemap(g_texSkybox.Sample(g_ssTrilinearRepeat, i_vecView));
 }
