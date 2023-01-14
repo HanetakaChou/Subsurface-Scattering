@@ -40,7 +40,7 @@
 #include <cstdarg>
 #include <memory>
 
-#include <GFSDK_FaceWorks.h>
+#include "GFSDK_FaceWorks.h"
 
 using std::max;
 using std::min;

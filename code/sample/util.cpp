@@ -39,12 +39,12 @@
 
 #include <DirectXMath.h>
 
-#include <DXUT/Core/DXUT.h>
-#include <DXUT/Core/DXUTmisc.h>
-#include <DXUT/Core/WICTextureLoader.h>
-#include <DXUT/Core/DDSTextureLoader.h>
+#include <DXUT.h>
+#include <DXUTmisc.h>
+#include <WICTextureLoader.h>
+#include <DDSTextureLoader.h>
 
-#include <GFSDK_FaceWorks.h>
+#include "../GFSDK_FaceWorks.h"
 
 #if defined(_MSC_VER) && (_MSC_VER < 1900)
 #pragma warning(disable : 4351) // Before VS2015 the warning "New behavior: array elements will be default-initialized" is produced when an array is construct-initialized with ().

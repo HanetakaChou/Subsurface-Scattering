@@ -33,14 +33,14 @@
 //----------------------------------------------------------------------------------
 
 #include "scenes.h"
-#include "shaders/resources.h"
+#include "../../shaders/sample/unified_layout.h"
 
 #include <algorithm>
 
 #include <DirectXMath.h>
 
-#include <DXUT/Core/DXUT.h>
-#include <DXUT/Optional/SDKmisc.h>
+#include <DXUT.h>
+#include <SDKmisc.h>
 
 using namespace std;
 using namespace DirectX;

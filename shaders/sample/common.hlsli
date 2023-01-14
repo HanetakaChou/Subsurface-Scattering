@@ -37,7 +37,7 @@
 
 #pragma pack_matrix(row_major)
 
-#include "resources.h"
+#include "unified_layout.h"
 
 struct Vertex
 {

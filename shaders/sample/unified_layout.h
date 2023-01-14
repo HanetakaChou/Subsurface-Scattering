@@ -32,19 +32,19 @@
 //
 //----------------------------------------------------------------------------------
 
-#ifndef RESOURCES_H
-#define RESOURCES_H
+#ifndef _UNIFIED_LAYOUT_H_
+#define _UNIFIED_LAYOUT_H_ 1
 
-// This file is included from both C++ and HLSL; it defines shared resource slot assignments
-
-#ifdef __cplusplus
+#if defined(__STDC__) || defined(__cplusplus)
 #define CBREG(n) n
 #define TEXREG(n) n
 #define SAMPREG(n) n
-#else
+#elif defined(HLSL_VERSION) || defined(__HLSL_VERSION)
 #define CBREG(n) register(b##n)
 #define TEXREG(n) register(t##n)
 #define SAMPREG(n) register(s##n)
+#else
+#error Unknown Compiler
 #endif
 
 #define CB_DEBUG CBREG(0)
@@ -72,4 +72,4 @@
 #define SAMP_TRILINEAR_REPEAT_ANISO SAMPREG(3)
 #define SAMP_PCF SAMPREG(4)
 
-#endif // RESOURCES_H
+#endif

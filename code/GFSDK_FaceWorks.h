@@ -172,11 +172,7 @@ typedef struct
 #endif // __GFSDK_COMMON_CUSTOMHEAP
 
 #define GFSDK_FACEWORKS_CALLCONV __GFSDK_CDECL__
-#if defined(GFSDK_FACEWORKS_EXPORTS)
-#define GFSDK_FACEWORKS_API extern "C" __GFSDK_EXPORT__
-#else
-#define GFSDK_FACEWORKS_API extern "C" __GFSDK_IMPORT__
-#endif
+#define GFSDK_FACEWORKS_API
 
 // =================================================================================
 //	Versioning

@@ -17,7 +17,7 @@
 // components in life support devices or systems without express written approval of
 // NVIDIA Corporation.
 //
-// Copyright � 2014 NVIDIA Corporation. All rights reserved.
+// Copyright (c) 2014 NVIDIA Corporation. All rights reserved.
 //
 // NVIDIA Corporation and its licensors retain all intellectual property and proprietary
 // rights in and to this software and related documentation and any modifications thereto.
@@ -33,12 +33,12 @@
 
 #include <DirectXMath.h>
 
-#include <DXUT/Core/DXUT.h>
-#include <DXUT/Optional/DXUTcamera.h>
-#include <DXUT/Optional/DXUTgui.h>
-#include <DXUT/Optional/SDKmisc.h>
+#include <DXUT.h>
+#include <DXUTcamera.h>
+#include <DXUTgui.h>
+#include <SDKmisc.h>
 
-#include <GFSDK_FaceWorks.h>
+#include "../GFSDK_FaceWorks.h"
 
 #include "util.h"
 #include "scenes.h"
@@ -46,6 +46,8 @@
 
 using namespace DirectX;
 using namespace std;
+
+ID3DUserDefinedAnnotation *g_d3d_perf = NULL;
 
 // DXUT objects
 
@@ -59,7 +61,7 @@ bool g_ShowText = true;
 bool g_bWireframe = false;
 bool g_bShowPerf = true;
 bool g_bCopyPerfToClipboard = false;
-bool g_bTessellation = true;
+bool g_bTessellation = false;
 
 // DXUT callbacks
 
@@ -112,12 +114,12 @@ int WINAPI wWinMain(HINSTANCE /*hInstance*/, HINSTANCE /*hPrevInstance*/, LPWSTR
 	DXUTSetCursorSettings(
 		true,  // Show cursor when fullscreen
 		true); // Clip cursor when fullscreen
-	DXUTCreateWindow(L"GeForce SDK FaceWorks D3D11 Test");
+	DXUTCreateWindow(L"Subsurface Scattering - PreIntegrated");
 	DXUTCreateDevice(
 		D3D_FEATURE_LEVEL_11_0,
 		true, // Windowed mode
-		1920,
-		1080);
+		1280,
+		800);
 
 	DXUTMainLoop();
 	return DXUTGetExitCode();
@@ -155,13 +157,13 @@ static const XMFLOAT4 s_rectViewBuffer(10, 50, 512, 512);
 
 const float g_FOV = 0.5f; // vertical fov, radians
 
-CSceneDigitalIra g_sceneDigitalIra;
-CSceneTest g_sceneTest;
-CSceneHand g_sceneHand;
-CSceneDragon g_sceneDragon;
+// CSceneDigitalIra			g_sceneDigitalIra;
+// CSceneTest				g_sceneTest;
+// CSceneHand				g_sceneHand;
+// CSceneDragon				g_sceneDragon;
 CSceneLPSHead g_sceneLPSHead;
-CSceneManjaladon g_sceneManjaladon;
-CSceneWarriorHead g_sceneWarriorHead;
+// CSceneManjaladon			g_sceneManjaladon;
+// CSceneWarriorHead		g_sceneWarriorHead;
 CScene *g_pSceneCur = nullptr;
 
 CBackground g_bkgndBlack;
@@ -270,14 +272,14 @@ HRESULT InitScene()
 	V_RETURN(CreateFullscreenMesh(pDevice, &g_meshFullscreen));
 
 	// Load scenes
-	V_RETURN(g_sceneDigitalIra.Init());
-	V_RETURN(g_sceneTest.Init());
-	V_RETURN(g_sceneHand.Init());
-	V_RETURN(g_sceneDragon.Init());
+	// V_RETURN(g_sceneDigitalIra.Init());
+	// V_RETURN(g_sceneTest.Init());
+	// V_RETURN(g_sceneHand.Init());
+	// V_RETURN(g_sceneDragon.Init());
 	V_RETURN(g_sceneLPSHead.Init());
-	V_RETURN(g_sceneManjaladon.Init());
-	V_RETURN(g_sceneWarriorHead.Init());
-	g_pSceneCur = &g_sceneDigitalIra;
+	// V_RETURN(g_sceneManjaladon.Init());
+	// V_RETURN(g_sceneWarriorHead.Init());
+	g_pSceneCur = &g_sceneLPSHead;
 
 	// Load backgrounds
 	V_RETURN(g_bkgndBlack.Init(L"HDREnvironments\\black_cube.dds", L"HDREnvironments\\black_cube.dds", L"HDREnvironments\\black_cube.dds"));
@@ -395,17 +397,19 @@ HRESULT InitScene()
 
 void CALLBACK OnD3D11DestroyDevice(void * /*pUserContext*/)
 {
+	SAFE_RELEASE(g_d3d_perf);
+
 	g_DialogResourceManager.OnD3D11DestroyDevice();
 	DXUTGetGlobalResourceCache().OnDestroyDevice();
 	SAFE_DELETE(g_pTxtHelper);
 
-	g_sceneDigitalIra.Release();
-	g_sceneTest.Release();
-	g_sceneHand.Release();
-	g_sceneDragon.Release();
+	// g_sceneDigitalIra.Release();
+	// g_sceneTest.Release();
+	// g_sceneHand.Release();
+	// g_sceneDragon.Release();
 	g_sceneLPSHead.Release();
-	g_sceneManjaladon.Release();
-	g_sceneWarriorHead.Release();
+	// g_sceneManjaladon.Release();
+	// g_sceneWarriorHead.Release();
 
 	g_bkgndBlack.Release();
 	g_bkgndCharcoal.Release();
@@ -572,15 +576,15 @@ void CALLBACK OnD3D11FrameRender(
 	pd3dContext->RSSetState(g_pRsSolid);
 
 	// Draw shadow map
-
+	g_d3d_perf->BeginEvent(L"ShadowMap");
 	g_shdmgr.BindShadow(pd3dContext, g_shadowmap.m_matWorldToClip);
 	for (int i = 0; i < cMeshToDraw; ++i)
 	{
 		meshesToDraw[i].m_pMesh->Draw(pd3dContext);
 	}
-
 	g_vsm.UpdateFromShadowMap(g_shadowmap, pd3dContext);
 	g_vsm.GaussianBlur(pd3dContext);
+	g_d3d_perf->EndEvent();
 
 	g_gpuProfiler.Timestamp(pd3dContext, GTS_ShadowMap);
 
@@ -612,6 +616,7 @@ void CALLBACK OnD3D11FrameRender(
 		// each shader individually. Gack.
 
 		// Draw skin shaders
+		g_d3d_perf->BeginEvent(L"Skin");
 		for (int i = 0; i < cMeshToDraw; ++i)
 		{
 			if (meshesToDraw[i].m_pMtl->m_shader == SHADER_Skin)
@@ -620,9 +625,11 @@ void CALLBACK OnD3D11FrameRender(
 				meshesToDraw[i].m_pMesh->Draw(pd3dContext);
 			}
 		}
+		g_d3d_perf->EndEvent();
 		g_gpuProfiler.Timestamp(pd3dContext, GTS_Skin);
 
 		// Draw eye shaders
+		g_d3d_perf->BeginEvent(L"Eye");
 		for (int i = 0; i < cMeshToDraw; ++i)
 		{
 			if (meshesToDraw[i].m_pMtl->m_shader == SHADER_Eye)
@@ -631,6 +638,7 @@ void CALLBACK OnD3D11FrameRender(
 				meshesToDraw[i].m_pMesh->Draw(pd3dContext);
 			}
 		}
+		g_d3d_perf->EndEvent();
 		g_gpuProfiler.Timestamp(pd3dContext, GTS_Eyes);
 	}
 	break;
@@ -670,6 +678,7 @@ void CALLBACK OnD3D11FrameRender(
 		// each shader individually. Gack.
 
 		// Draw skin shaders
+		g_d3d_perf->BeginEvent(L"Skin");
 		for (int i = 0; i < cMeshToDraw; ++i)
 		{
 			if (meshesToDraw[i].m_pMtl->m_shader == SHADER_Skin)
@@ -685,9 +694,11 @@ void CALLBACK OnD3D11FrameRender(
 				meshesToDraw[i].m_pMesh->Draw(pd3dContext);
 			}
 		}
+		g_d3d_perf->EndEvent();
 		g_gpuProfiler.Timestamp(pd3dContext, GTS_Skin);
 
 		// Draw eye shaders
+		g_d3d_perf->BeginEvent(L"Eye");
 		for (int i = 0; i < cMeshToDraw; ++i)
 		{
 			if (meshesToDraw[i].m_pMtl->m_shader == SHADER_Eye)
@@ -703,6 +714,7 @@ void CALLBACK OnD3D11FrameRender(
 				meshesToDraw[i].m_pMesh->Draw(pd3dContext);
 			}
 		}
+		g_d3d_perf->EndEvent();
 		g_gpuProfiler.Timestamp(pd3dContext, GTS_Eyes);
 
 		if (faceworksErrors.m_msg)
@@ -723,6 +735,8 @@ void CALLBACK OnD3D11FrameRender(
 		// Calculate scale-bias for mapping curvature to LUT coordinate,
 		// given the min and max curvature encoded in the LUT.
 
+		g_d3d_perf->BeginEvent(L"View Curvature");
+
 		float curvatureScale = 1.0f / (1.0f / g_curvatureRadiusMinLUT - 1.0f / g_curvatureRadiusMaxLUT);
 		float curvatureBias = 1.0f / (1.0f - g_curvatureRadiusMaxLUT / g_curvatureRadiusMinLUT);
 
@@ -732,11 +746,15 @@ void CALLBACK OnD3D11FrameRender(
 		{
 			meshesToDraw[i].m_pMesh->Draw(pd3dContext);
 		}
+
+		g_d3d_perf->EndEvent();
 	}
 	break;
 
 	case RM_ViewThickness:
 	{
+		g_d3d_perf->BeginEvent(L"View Thickness");
+
 		GFSDK_FaceWorks_DeepScatterConfig deepScatterConfigSkin = {};
 		deepScatterConfigSkin.m_radius = max(g_deepScatterRadius, 0.01f);
 		deepScatterConfigSkin.m_shadowProjType = GFSDK_FaceWorks_ParallelProjection;
@@ -766,6 +784,8 @@ void CALLBACK OnD3D11FrameRender(
 		{
 			meshesToDraw[i].m_pMesh->Draw(pd3dContext);
 		}
+
+		g_d3d_perf->EndEvent();
 	}
 	break;
 
@@ -777,11 +797,14 @@ void CALLBACK OnD3D11FrameRender(
 	g_shdmgr.UnbindTess(pd3dContext);
 
 	// Draw the skybox
+	g_d3d_perf->BeginEvent(L"SkyBox");
 	pd3dContext->RSSetState(g_pRsSolid);
 	g_shdmgr.BindSkybox(pd3dContext, g_pBkgndCur->m_pSrvCubeEnv, matClipToWorldAxes);
 	g_meshFullscreen.Draw(pd3dContext);
+	g_d3d_perf->EndEvent();
 
 	// Draw hair shaders, with alpha blending
+	g_d3d_perf->BeginEvent(L"Hair");
 	pd3dContext->RSSetState(g_pRsSolidDoubleSided);
 	pd3dContext->OMSetDepthStencilState(g_pDssNoDepthWrite, 0);
 	pd3dContext->OMSetBlendState(g_pBsAlphaBlend, nullptr, ~0UL);
@@ -796,6 +819,7 @@ void CALLBACK OnD3D11FrameRender(
 	pd3dContext->RSSetState(g_pRsSolid);
 	pd3dContext->OMSetDepthStencilState(g_pDssDepthTest, 0);
 	pd3dContext->OMSetBlendState(nullptr, nullptr, ~0UL);
+	g_d3d_perf->EndEvent();
 
 	// Now switch to the SRGB back buffer view, for compositing UI
 	V(DXUTSetupD3D11Views(pd3dContext));
@@ -804,6 +828,8 @@ void CALLBACK OnD3D11FrameRender(
 
 	if (g_viewbuf == VIEWBUF_ShadowMap)
 	{
+		g_d3d_perf->BeginEvent(L"VIEWBUF ShadowMap");
+
 		// Copy red channel to RGB channels
 		XMFLOAT4X4 matTransformColor(
 			1, 1, 1, 0,
@@ -817,21 +843,27 @@ void CALLBACK OnD3D11FrameRender(
 			s_rectViewBuffer,
 			&matTransformColor);
 		V(DXUTSetupD3D11Views(pd3dContext));
+
+		g_d3d_perf->EndEvent();
 	}
 
 	// Render GUI and text
 
 	if (g_ShowGUI)
 	{
+		g_d3d_perf->BeginEvent(L"GUI");
 		UpdateSliders();
 		g_HUD.OnRender(fElapsedTime);
+		g_d3d_perf->EndEvent();
 	}
 
 	g_gpuProfiler.WaitForDataAndUpdate(pd3dContext);
 
 	if (g_ShowText)
 	{
+		g_d3d_perf->BeginEvent(L"Text");
 		RenderText();
+		g_d3d_perf->EndEvent();
 	}
 
 	g_gpuProfiler.EndFrame(pd3dContext);
@@ -903,7 +935,11 @@ HRESULT CALLBACK OnD3D11CreateDevice(
 #endif
 
 	ID3D11DeviceContext *pd3dContext = DXUTGetD3D11DeviceContext();
+
+	V_RETURN(pd3dContext->QueryInterface(IID_PPV_ARGS(&g_d3d_perf)));
+
 	V_RETURN(g_DialogResourceManager.OnD3D11CreateDevice(pd3dDevice, pd3dContext));
+
 	g_pTxtHelper = new CDXUTTextHelper(pd3dDevice, pd3dContext, &g_DialogResourceManager, 15);
 
 	V_RETURN(InitScene());
@@ -932,47 +968,19 @@ HRESULT CALLBACK OnD3D11ResizedSwapChain(
 	static const float NEAR_PLANE = 0.1f;
 	static const float FAR_PLANE = 1e5f;
 
-	g_sceneDigitalIra.Camera()->SetProjParams(
-		g_FOV,
-		float(pBackBufferSurfaceDesc->Width) / float(pBackBufferSurfaceDesc->Height),
-		NEAR_PLANE,
-		FAR_PLANE);
+	// g_sceneDigitalIra.Camera()->SetProjParams(g_FOV, float(pBackBufferSurfaceDesc->Width) / float(pBackBufferSurfaceDesc->Height), NEAR_PLANE, FAR_PLANE);
 
-	g_sceneTest.Camera()->SetProjParams(
-		g_FOV,
-		float(pBackBufferSurfaceDesc->Width) / float(pBackBufferSurfaceDesc->Height),
-		NEAR_PLANE,
-		FAR_PLANE);
+	// g_sceneTest.Camera()->SetProjParams(g_FOV, float(pBackBufferSurfaceDesc->Width) / float(pBackBufferSurfaceDesc->Height), NEAR_PLANE, FAR_PLANE);
 
-	g_sceneHand.Camera()->SetProjParams(
-		g_FOV,
-		float(pBackBufferSurfaceDesc->Width) / float(pBackBufferSurfaceDesc->Height),
-		NEAR_PLANE,
-		FAR_PLANE);
+	// g_sceneHand.Camera()->SetProjParams(g_FOV, float(pBackBufferSurfaceDesc->Width) / float(pBackBufferSurfaceDesc->Height), NEAR_PLANE, FAR_PLANE);
 
-	g_sceneDragon.Camera()->SetProjParams(
-		g_FOV,
-		float(pBackBufferSurfaceDesc->Width) / float(pBackBufferSurfaceDesc->Height),
-		NEAR_PLANE,
-		FAR_PLANE);
+	// g_sceneDragon.Camera()->SetProjParams(g_FOV, float(pBackBufferSurfaceDesc->Width) / float(pBackBufferSurfaceDesc->Height), NEAR_PLANE, FAR_PLANE);
 
-	g_sceneLPSHead.Camera()->SetProjParams(
-		g_FOV,
-		float(pBackBufferSurfaceDesc->Width) / float(pBackBufferSurfaceDesc->Height),
-		NEAR_PLANE,
-		FAR_PLANE);
+	g_sceneLPSHead.Camera()->SetProjParams(g_FOV, float(pBackBufferSurfaceDesc->Width) / float(pBackBufferSurfaceDesc->Height), NEAR_PLANE, FAR_PLANE);
 
-	g_sceneManjaladon.Camera()->SetProjParams(
-		g_FOV,
-		float(pBackBufferSurfaceDesc->Width) / float(pBackBufferSurfaceDesc->Height),
-		NEAR_PLANE,
-		FAR_PLANE);
+	// g_sceneManjaladon.Camera()->SetProjParams(g_FOV, float(pBackBufferSurfaceDesc->Width) / float(pBackBufferSurfaceDesc->Height), NEAR_PLANE, FAR_PLANE);
 
-	g_sceneWarriorHead.Camera()->SetProjParams(
-		g_FOV,
-		float(pBackBufferSurfaceDesc->Width) / float(pBackBufferSurfaceDesc->Height),
-		NEAR_PLANE,
-		FAR_PLANE);
+	// g_sceneWarriorHead.Camera()->SetProjParams(g_FOV, float(pBackBufferSurfaceDesc->Width) / float(pBackBufferSurfaceDesc->Height), NEAR_PLANE, FAR_PLANE);
 
 	// Regenerate the non-SRGB render target view
 
@@ -1105,8 +1113,8 @@ void InitUI()
 
 	// Hard-coded HUD layout
 
-	static const int ITEM_HEIGHT = 20;
-	static const int ITEM_DELTA = ITEM_HEIGHT + 2;
+	static const int ITEM_HEIGHT = 15;
+	static const int ITEM_DELTA = ITEM_HEIGHT + 1;
 	static const int GROUP_DELTA = ITEM_DELTA;
 	static const int ITEM_WIDTH = 170;
 	static const int ITEM_LEFT = 15;
@@ -1124,13 +1132,13 @@ void InitUI()
 
 	CDXUTComboBox *pComboBoxScene = nullptr;
 	g_HUD.AddComboBox(IDC_SCENE, ITEM_LEFT, iY += ITEM_DELTA, ITEM_WIDTH, ITEM_HEIGHT, 0, false, &pComboBoxScene);
-	pComboBoxScene->AddItem(L"Digital Ira", &g_sceneDigitalIra);
+	// pComboBoxScene->AddItem(L"Digital Ira", &g_sceneDigitalIra);
 	pComboBoxScene->AddItem(L"LPS Head", &g_sceneLPSHead);
-	pComboBoxScene->AddItem(L"Warrior Head", &g_sceneWarriorHead);
-	pComboBoxScene->AddItem(L"Hand", &g_sceneHand);
-	pComboBoxScene->AddItem(L"Dragon", &g_sceneDragon);
-	pComboBoxScene->AddItem(L"Manjaladon", &g_sceneManjaladon);
-	pComboBoxScene->AddItem(L"Test", &g_sceneTest);
+	// pComboBoxScene->AddItem(L"Warrior Head", &g_sceneWarriorHead);
+	// pComboBoxScene->AddItem(L"Hand", &g_sceneHand);
+	// pComboBoxScene->AddItem(L"Dragon", &g_sceneDragon);
+	// pComboBoxScene->AddItem(L"Manjaladon", &g_sceneManjaladon);
+	// pComboBoxScene->AddItem(L"Test", &g_sceneTest);
 	pComboBoxScene->SetSelectedByIndex(0);
 
 	// Add combo box for background selection
@@ -1247,25 +1255,25 @@ void CALLBACK OnGUIEvent(UINT nEvent, int nControlID, CDXUTControl * /*pControl*
 
 	case IDC_CAMERA_WIDE:
 	{
-		XMVECTOR posLookAt = XMLoadFloat3(&g_sceneDigitalIra.m_meshHead.m_posCenter);
-		XMVECTOR posCamera = posLookAt + XMVectorSet(0.0f, 0.0f, 150.0f, 0.0f);
-		g_sceneDigitalIra.Camera()->SetViewParams(posCamera, posLookAt);
+		// XMVECTOR posLookAt = XMLoadFloat3(&g_sceneDigitalIra.m_meshHead.m_posCenter);
+		// XMVECTOR posCamera = posLookAt + XMVectorSet(0.0f, 0.0f, 150.0f, 0.0f);
+		// g_sceneDigitalIra.Camera()->SetViewParams(posCamera, posLookAt);
 	}
 	break;
 
 	case IDC_CAMERA_CLOSE:
 	{
-		XMVECTOR posLookAt = XMLoadFloat3(&g_sceneDigitalIra.m_meshHead.m_posCenter);
-		XMVECTOR posCamera = posLookAt + XMVectorSet(0.0f, 0.0f, 60.0f, 0.0f);
-		g_sceneDigitalIra.Camera()->SetViewParams(posCamera, posLookAt);
+		// XMVECTOR posLookAt = XMLoadFloat3(&g_sceneDigitalIra.m_meshHead.m_posCenter);
+		// XMVECTOR posCamera = posLookAt + XMVectorSet(0.0f, 0.0f, 60.0f, 0.0f);
+		// g_sceneDigitalIra.Camera()->SetViewParams(posCamera, posLookAt);
 	}
 	break;
 
 	case IDC_CAMERA_EYE:
 	{
-		XMVECTOR posLookAt = XMLoadFloat3(&g_sceneDigitalIra.m_meshEyeL.m_posCenter);
-		XMVECTOR posCamera = posLookAt + XMVectorSet(0.0f, 0.0f, 10.0f, 0.0f);
-		g_sceneDigitalIra.Camera()->SetViewParams(posCamera, posLookAt);
+		// XMVECTOR posLookAt = XMLoadFloat3(&g_sceneDigitalIra.m_meshEyeL.m_posCenter);
+		// XMVECTOR posCamera = posLookAt + XMVectorSet(0.0f, 0.0f, 10.0f, 0.0f);
+		// g_sceneDigitalIra.Camera()->SetViewParams(posCamera, posLookAt);
 	}
 	break;
 
@@ -1340,8 +1348,8 @@ void CALLBACK OnKeyboard(UINT nChar, bool bKeyDown, bool /*bAltDown*/, void * /*
 		break;
 
 	case VK_F2:
-		g_pSceneCur = &g_sceneDigitalIra;
-		g_HUD.GetComboBox(IDC_SCENE)->SetSelectedByData(&g_sceneDigitalIra);
+		// g_pSceneCur = &g_sceneDigitalIra;
+		// g_HUD.GetComboBox(IDC_SCENE)->SetSelectedByData(&g_sceneDigitalIra);
 		break;
 
 	case VK_F3:
@@ -1350,28 +1358,28 @@ void CALLBACK OnKeyboard(UINT nChar, bool bKeyDown, bool /*bAltDown*/, void * /*
 		break;
 
 	case VK_F4:
-		g_pSceneCur = &g_sceneWarriorHead;
-		g_HUD.GetComboBox(IDC_SCENE)->SetSelectedByData(&g_sceneWarriorHead);
+		// g_pSceneCur = &g_sceneWarriorHead;
+		// g_HUD.GetComboBox(IDC_SCENE)->SetSelectedByData(&g_sceneWarriorHead);
 		break;
 
 	case VK_F5:
-		g_pSceneCur = &g_sceneHand;
-		g_HUD.GetComboBox(IDC_SCENE)->SetSelectedByData(&g_sceneHand);
+		// g_pSceneCur = &g_sceneHand;
+		// g_HUD.GetComboBox(IDC_SCENE)->SetSelectedByData(&g_sceneHand);
 		break;
 
 	case VK_F6:
-		g_pSceneCur = &g_sceneDragon;
-		g_HUD.GetComboBox(IDC_SCENE)->SetSelectedByData(&g_sceneDragon);
+		// g_pSceneCur = &g_sceneDragon;
+		// g_HUD.GetComboBox(IDC_SCENE)->SetSelectedByData(&g_sceneDragon);
 		break;
 
 	case VK_F7:
-		g_pSceneCur = &g_sceneManjaladon;
-		g_HUD.GetComboBox(IDC_SCENE)->SetSelectedByData(&g_sceneManjaladon);
+		// g_pSceneCur = &g_sceneManjaladon;
+		// g_HUD.GetComboBox(IDC_SCENE)->SetSelectedByData(&g_sceneManjaladon);
 		break;
 
 	case VK_F8:
-		g_pSceneCur = &g_sceneTest;
-		g_HUD.GetComboBox(IDC_SCENE)->SetSelectedByData(&g_sceneTest);
+		// g_pSceneCur = &g_sceneTest;
+		// g_HUD.GetComboBox(IDC_SCENE)->SetSelectedByData(&g_sceneTest);
 		break;
 
 	case 'G':

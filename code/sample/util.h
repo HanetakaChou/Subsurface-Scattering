@@ -37,8 +37,8 @@
 #include <string>
 #include <vector>
 
-#include <DXUT/Core/DXUT.h>
-#include <DXUT/Optional/DXUTcamera.h>
+#include <DXUT.h>
+#include <DXUTcamera.h>
 
 // Get the dimension of a static array
 template <typename T, int N>

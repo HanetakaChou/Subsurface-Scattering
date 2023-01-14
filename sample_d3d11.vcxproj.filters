@@ -1,111 +1,252 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
 <Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <ItemGroup>
-    <Filter Include="Source Files">
-      <UniqueIdentifier>{4FC737F1-C7A5-4376-A066-2A32D752A2FF}</UniqueIdentifier>
-      <Extensions>cpp;c;cc;cxx;def;odl;idl;hpj;bat;asm;asmx</Extensions>
-    </Filter>
-    <Filter Include="Header Files">
-      <UniqueIdentifier>{93995380-89BD-4b04-88EB-625FBE52EBFB}</UniqueIdentifier>
-      <Extensions>h;hpp;hxx;hm;inl;inc;xsd</Extensions>
-    </Filter>
-    <Filter Include="Shader Files">
+    <Filter Include="shaders">
       <UniqueIdentifier>{0fd9f729-50b2-419a-91f2-d86725a2e85c}</UniqueIdentifier>
     </Filter>
+    <Filter Include="DXUT">
+      <UniqueIdentifier>{0055ff3a-635b-41b1-a0e4-e83c7c3e499e}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="DXUT\Core">
+      <UniqueIdentifier>{591a44a6-b64a-4617-b30e-69eec67a6355}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="DXUT\Optional">
+      <UniqueIdentifier>{82aab196-84bf-422e-b969-5c40c1ec964b}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="code">
+      <UniqueIdentifier>{c852400a-d333-40c4-a232-c27f2f3eff5e}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="shaders\sample">
+      <UniqueIdentifier>{f3798bc2-dafa-431b-a17c-40a0cda91ff9}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="code\sample">
+      <UniqueIdentifier>{bf85acbb-1991-4e14-a12e-dcc7fe3fe9eb}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="DXUT\Media">
+      <UniqueIdentifier>{cb32dd04-8e05-47d1-befc-94b7bd744142}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="DXUT\Media\UI">
+      <UniqueIdentifier>{e6254fea-c44f-411b-b7b7-9724a3b6baaa}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="..\..\d3d11\sample_d3d11.cpp">
-      <Filter>Source Files</Filter>
+    <ClCompile Include="DXUT\Core\DDSTextureLoader.cpp">
+      <Filter>DXUT\Core</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\d3d11\util.cpp">
-      <Filter>Source Files</Filter>
+    <ClCompile Include="DXUT\Core\dxerr.cpp">
+      <Filter>DXUT\Core</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\d3d11\scenes.cpp">
-      <Filter>Source Files</Filter>
+    <ClCompile Include="DXUT\Core\DXUT.cpp">
+      <Filter>DXUT\Core</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\d3d11\shader.cpp">
-      <Filter>Source Files</Filter>
+    <ClCompile Include="DXUT\Core\DXUTDevice11.cpp">
+      <Filter>DXUT\Core</Filter>
+    </ClCompile>
+    <ClCompile Include="DXUT\Core\DXUTmisc.cpp">
+      <Filter>DXUT\Core</Filter>
+    </ClCompile>
+    <ClCompile Include="DXUT\Core\ScreenGrab.cpp">
+      <Filter>DXUT\Core</Filter>
+    </ClCompile>
+    <ClCompile Include="DXUT\Core\WICTextureLoader.cpp">
+      <Filter>DXUT\Core</Filter>
+    </ClCompile>
+    <ClCompile Include="DXUT\Optional\DXUTcamera.cpp">
+      <Filter>DXUT\Optional</Filter>
+    </ClCompile>
+    <ClCompile Include="DXUT\Optional\DXUTgui.cpp">
+      <Filter>DXUT\Optional</Filter>
+    </ClCompile>
+    <ClCompile Include="DXUT\Optional\DXUTres.cpp">
+      <Filter>DXUT\Optional</Filter>
+    </ClCompile>
+    <ClCompile Include="DXUT\Optional\DXUTsettingsdlg.cpp">
+      <Filter>DXUT\Optional</Filter>
+    </ClCompile>
+    <ClCompile Include="DXUT\Optional\SDKmesh.cpp">
+      <Filter>DXUT\Optional</Filter>
+    </ClCompile>
+    <ClCompile Include="DXUT\Optional\SDKmisc.cpp">
+      <Filter>DXUT\Optional</Filter>
+    </ClCompile>
+    <ClCompile Include="code\sample\sample_d3d11.cpp">
+      <Filter>code\sample</Filter>
+    </ClCompile>
+    <ClCompile Include="code\sample\scenes.cpp">
+      <Filter>code\sample</Filter>
+    </ClCompile>
+    <ClCompile Include="code\sample\shader.cpp">
+      <Filter>code\sample</Filter>
+    </ClCompile>
+    <ClCompile Include="code\sample\util.cpp">
+      <Filter>code\sample</Filter>
+    </ClCompile>
+    <ClCompile Include="code\runtime.cpp">
+      <Filter>code</Filter>
+    </ClCompile>
+    <ClCompile Include="code\precomp.cpp">
+      <Filter>code</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
-    <FxCompile Include="..\..\d3d11\shaders\shadow_vs.hlsl">
-      <Filter>Shader Files</Filter>
+    <FxCompile Include="shaders\sample\world_vs.hlsl">
+      <Filter>shaders\sample</Filter>
     </FxCompile>
-    <FxCompile Include="..\..\d3d11\shaders\tess_vs.hlsl">
-      <Filter>Shader Files</Filter>
+    <FxCompile Include="shaders\sample\copy_ps.hlsl">
+      <Filter>shaders\sample</Filter>
     </FxCompile>
-    <FxCompile Include="..\..\d3d11\shaders\tess_hs.hlsl">
-      <Filter>Shader Files</Filter>
+    <FxCompile Include="shaders\sample\create_vsm_ps.hlsl">
+      <Filter>shaders\sample</Filter>
     </FxCompile>
-    <FxCompile Include="..\..\d3d11\shaders\tess_ds.hlsl">
-      <Filter>Shader Files</Filter>
+    <FxCompile Include="shaders\sample\curvature_ps.hlsl">
+      <Filter>shaders\sample</Filter>
     </FxCompile>
-    <FxCompile Include="..\..\d3d11\shaders\world_vs.hlsl">
-      <Filter>Shader Files</Filter>
+    <FxCompile Include="shaders\sample\curvature_vs.hlsl">
+      <Filter>shaders\sample</Filter>
     </FxCompile>
-    <FxCompile Include="..\..\d3d11\shaders\screen_vs.hlsl">
-      <Filter>Shader Files</Filter>
+    <FxCompile Include="shaders\sample\eye.hlsl">
+      <Filter>shaders\sample</Filter>
     </FxCompile>
-    <FxCompile Include="..\..\d3d11\shaders\copy_ps.hlsl">
-      <Filter>Shader Files</Filter>
+    <FxCompile Include="shaders\sample\eye_deepscatter.hlsl">
+      <Filter>shaders\sample</Filter>
     </FxCompile>
-    <FxCompile Include="..\..\d3d11\shaders\create_vsm_ps.hlsl">
-      <Filter>Shader Files</Filter>
+    <FxCompile Include="shaders\sample\eye_sss.hlsl">
+      <Filter>shaders\sample</Filter>
     </FxCompile>
-    <FxCompile Include="..\..\d3d11\shaders\gaussian_ps.hlsl">
-      <Filter>Shader Files</Filter>
+    <FxCompile Include="shaders\sample\eye_sss_deepscatter.hlsl">
+      <Filter>shaders\sample</Filter>
     </FxCompile>
-    <FxCompile Include="..\..\d3d11\shaders\skybox_vs.hlsl">
-      <Filter>Shader Files</Filter>
+    <FxCompile Include="shaders\sample\gaussian_ps.hlsl">
+      <Filter>shaders\sample</Filter>
     </FxCompile>
-    <FxCompile Include="..\..\d3d11\shaders\skybox_ps.hlsl">
-      <Filter>Shader Files</Filter>
+    <FxCompile Include="shaders\sample\hair_ps.hlsl">
+      <Filter>shaders\sample</Filter>
     </FxCompile>
-    <FxCompile Include="..\..\d3d11\shaders\curvature_vs.hlsl">
-      <Filter>Shader Files</Filter>
+    <FxCompile Include="shaders\sample\screen_vs.hlsl">
+      <Filter>shaders\sample</Filter>
     </FxCompile>
-    <FxCompile Include="..\..\d3d11\shaders\curvature_ps.hlsl">
-      <Filter>Shader Files</Filter>
+    <FxCompile Include="shaders\sample\shadow_vs.hlsl">
+      <Filter>shaders\sample</Filter>
     </FxCompile>
-    <FxCompile Include="..\..\d3d11\shaders\hair_ps.hlsl">
-      <Filter>Shader Files</Filter>
+    <FxCompile Include="shaders\sample\skin.hlsl">
+      <Filter>shaders\sample</Filter>
     </FxCompile>
-    <FxCompile Include="..\..\d3d11\shaders\thickness_ps.hlsl">
-      <Filter>Shader Files</Filter>
+    <FxCompile Include="shaders\sample\skin_deepscatter.hlsl">
+      <Filter>shaders\sample</Filter>
+    </FxCompile>
+    <FxCompile Include="shaders\sample\skin_sss.hlsl">
+      <Filter>shaders\sample</Filter>
+    </FxCompile>
+    <FxCompile Include="shaders\sample\skin_sss_deepscatter.hlsl">
+      <Filter>shaders\sample</Filter>
+    </FxCompile>
+    <FxCompile Include="shaders\sample\skybox_ps.hlsl">
+      <Filter>shaders\sample</Filter>
+    </FxCompile>
+    <FxCompile Include="shaders\sample\skybox_vs.hlsl">
+      <Filter>shaders\sample</Filter>
+    </FxCompile>
+    <FxCompile Include="shaders\sample\tess_ds.hlsl">
+      <Filter>shaders\sample</Filter>
+    </FxCompile>
+    <FxCompile Include="shaders\sample\tess_hs.hlsl">
+      <Filter>shaders\sample</Filter>
+    </FxCompile>
+    <FxCompile Include="shaders\sample\tess_vs.hlsl">
+      <Filter>shaders\sample</Filter>
+    </FxCompile>
+    <FxCompile Include="shaders\sample\thickness_ps.hlsl">
+      <Filter>shaders\sample</Filter>
     </FxCompile>
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="..\..\d3d11\shaders\common.h">
-      <Filter>Shader Files</Filter>
+    <ClInclude Include="DXUT\Core\DDSTextureLoader.h">
+      <Filter>DXUT\Core</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\d3d11\shaders\lighting.h">
-      <Filter>Shader Files</Filter>
+    <ClInclude Include="DXUT\Core\dxerr.h">
+      <Filter>DXUT\Core</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\d3d11\shaders\tess.h">
-      <Filter>Shader Files</Filter>
+    <ClInclude Include="DXUT\Core\DXUT.h">
+      <Filter>DXUT\Core</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\d3d11\shaders\resources.h">
-      <Filter>Shader Files</Filter>
+    <ClInclude Include="DXUT\Core\DXUTDevice11.h">
+      <Filter>DXUT\Core</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\d3d11\shaders\skin.h">
-      <Filter>Shader Files</Filter>
+    <ClInclude Include="DXUT\Core\DXUTmisc.h">
+      <Filter>DXUT\Core</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\d3d11\shaders\eye.h">
-      <Filter>Shader Files</Filter>
+    <ClInclude Include="DXUT\Core\ScreenGrab.h">
+      <Filter>DXUT\Core</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\d3d11\shader.h">
-      <Filter>Header Files</Filter>
+    <ClInclude Include="DXUT\Core\WICTextureLoader.h">
+      <Filter>DXUT\Core</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\d3d11\shaders\tonemap.h">
-      <Filter>Shader Files</Filter>
+    <ClInclude Include="DXUT\Optional\DXUTcamera.h">
+      <Filter>DXUT\Optional</Filter>
+    </ClInclude>
+    <ClInclude Include="DXUT\Optional\DXUTgui.h">
+      <Filter>DXUT\Optional</Filter>
+    </ClInclude>
+    <ClInclude Include="DXUT\Optional\DXUTres.h">
+      <Filter>DXUT\Optional</Filter>
+    </ClInclude>
+    <ClInclude Include="DXUT\Optional\DXUTsettingsdlg.h">
+      <Filter>DXUT\Optional</Filter>
+    </ClInclude>
+    <ClInclude Include="DXUT\Optional\SDKmesh.h">
+      <Filter>DXUT\Optional</Filter>
+    </ClInclude>
+    <ClInclude Include="DXUT\Optional\SDKmisc.h">
+      <Filter>DXUT\Optional</Filter>
+    </ClInclude>
+    <ClInclude Include="shaders\sample\common.hlsli">
+      <Filter>shaders\sample</Filter>
+    </ClInclude>
+    <ClInclude Include="shaders\sample\eye.hlsli">
+      <Filter>shaders\sample</Filter>
+    </ClInclude>
+    <ClInclude Include="shaders\sample\lighting.hlsli">
+      <Filter>shaders\sample</Filter>
+    </ClInclude>
+    <ClInclude Include="shaders\sample\unified_layout.h">
+      <Filter>shaders\sample</Filter>
+    </ClInclude>
+    <ClInclude Include="shaders\sample\skin.hlsli">
+      <Filter>shaders\sample</Filter>
+    </ClInclude>
+    <ClInclude Include="shaders\sample\tess.hlsli">
+      <Filter>shaders\sample</Filter>
+    </ClInclude>
+    <ClInclude Include="shaders\sample\tonemap.hlsli">
+      <Filter>shaders\sample</Filter>
+    </ClInclude>
+    <ClInclude Include="code\sample\scenes.h">
+      <Filter>code\sample</Filter>
+    </ClInclude>
+    <ClInclude Include="code\sample\shader.h">
+      <Filter>code\sample</Filter>
+    </ClInclude>
+    <ClInclude Include="code\sample\util.h">
+      <Filter>code\sample</Filter>
+    </ClInclude>
+    <ClInclude Include="code\GFSDK_FaceWorks.h">
+      <Filter>code</Filter>
+    </ClInclude>
+    <ClInclude Include="code\internal.h">
+      <Filter>code</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="..\..\d3d11\util.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\d3d11\scenes.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
+    <None Include="shaders\GFSDK_FaceWorks.hlsli">
+      <Filter>shaders</Filter>
+    </None>
+  </ItemGroup>
+  <ItemGroup>
+    <CopyFileToFolders Include="DXUT\Media\UI\dxutcontrols.dds">
+      <Filter>DXUT\Media\UI</Filter>
+    </CopyFileToFolders>
+    <CopyFileToFolders Include="DXUT\Media\UI\Font.dds">
+      <Filter>DXUT\Media\UI</Filter>
+    </CopyFileToFolders>
   </ItemGroup>
 </Project>

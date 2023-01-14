@@ -37,7 +37,7 @@
 
 #include "common.hlsli"
 #include "lighting.hlsli"
-#include "GFSDK_FaceWorks.hlsli"
+#include "../GFSDK_FaceWorks.hlsli"
 
 cbuffer cbShader : CB_SHADER
 {

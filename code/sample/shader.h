@@ -34,7 +34,7 @@
 
 #pragma once
 
-#include "GFSDK_FaceWorks.h"
+#include "../GFSDK_FaceWorks.h"
 #include <unordered_map>
 #include <d3d11.h>
 #include <DirectXMath.h>
@@ -195,10 +195,6 @@ public:
 	void Release();
 
 private:
-	bool CompileShader(
-		ID3D11Device *pDevice,
-		const char *source,
-		ID3D11PixelShader **ppPsOut);
 	void CreateSkinShader(ID3D11Device *pDevice, SHDFEATURES features);
 	void CreateEyeShader(ID3D11Device *pDevice, SHDFEATURES features);
 

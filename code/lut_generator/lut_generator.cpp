@@ -38,7 +38,7 @@
 #include <ctime>
 #include <vector>
 
-#include <GFSDK_FaceWorks.h>
+#include "../GFSDK_FaceWorks.h"
 
 #define NOMINMAX
 #define WIN32_LEAN_AND_MEAN

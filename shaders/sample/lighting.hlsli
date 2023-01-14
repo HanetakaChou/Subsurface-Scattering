@@ -37,7 +37,7 @@
 
 #include "common.hlsli"
 #include "tonemap.hlsli"
-#include "GFSDK_FaceWorks.hlsli"
+#include "../GFSDK_FaceWorks.hlsli"
 
 // Normal mapping
 
