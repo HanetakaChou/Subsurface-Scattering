@@ -79,8 +79,6 @@ GFSDK_FACEWORKS_API const char *GFSDK_FACEWORKS_CALLCONV GFSDK_FaceWorks_GetBuil
 #undef STRINGIZE2
 }
 
-static const float pi = 3.141592654f;
-
 // Initialization
 
 GFSDK_FACEWORKS_API GFSDK_FaceWorks_Result GFSDK_FACEWORKS_CALLCONV GFSDK_FaceWorks_Init_Internal(int headerVersion)
@@ -499,40 +497,24 @@ GFSDK_FACEWORKS_API GFSDK_FaceWorks_Result GFSDK_FACEWORKS_CALLCONV GFSDK_FaceWo
 	return GFSDK_FaceWorks_OK;
 }
 
-// Diffusion profile from GPU Gems 3 - mixture of 6 Gaussians with RGB weights
-// NOTE: could switch to a LUT generated using one of the Donner and Jensen papers
+// https://oeis.org/A000796
+#define PI 3.14159265358979323846264338327950288419716939937510582097494459230781640628620899862803482534211706798214
 
-static const float diffusionSigmas[] = {0.080f, 0.220f, 0.432f, 0.753f, 1.411f, 2.722f};
-static const float diffusionWeightsR[] = {0.233f, 0.100f, 0.118f, 0.113f, 0.358f, 0.078f};
-static const float diffusionWeightsG[] = {0.455f, 0.336f, 0.198f, 0.007f, 0.004f, 0.000f};
-static const float diffusionWeightsB[] = {0.649f, 0.344f, 0.000f, 0.007f, 0.000f, 0.000f};
+// https://oeis.org/A002162
+#define LOG2_E (1.0 / 0.693147180559945309417232121458176568075500134360255254120680009493393621969694715605863326996418687)
 
-static_assert(dim(diffusionWeightsR) == dim(diffusionSigmas), "dimension mismatch between array diffusionWeightsR and diffusionSigmas");
-static_assert(dim(diffusionWeightsG) == dim(diffusionSigmas), "dimension mismatch between array diffusionWeightsG and diffusionSigmas");
-static_assert(dim(diffusionWeightsB) == dim(diffusionSigmas), "dimension mismatch between array diffusionWeightsB and diffusionSigmas");
-
-inline float Gaussian(float sigma, float x)
+static inline double diffusion_profile_evaluate_R_N_mul_r(double S, double r)
 {
-	static const float rsqrtTwoPi = 0.39894228f;
-	return (rsqrtTwoPi / sigma) * expf(-0.5f * (x * x) / (sigma * sigma));
-}
+	// https://zero-radiance.github.io/post/sampling-diffusion/
 
-static void EvaluateDiffusionProfile(float x, float rgb[3]) // x in millimeters
-{
-	rgb[0] = 0.0f;
-	rgb[1] = 0.0f;
-	rgb[2] = 0.0f;
+	// Exp[-s * r / 3]
+	double exp_13 = exp2(((LOG2_E * (-1.0 / 3.0)) * r) * S);
+	// Exp[-s * r / 3] + Exp[-S * r]
+	double exp_sum = exp_13 * (1 + exp_13 * exp_13);
+	// S / (8 * PI) * (Exp[-S * r / 3] + Exp[-S * r])
+	double R_N_mul_r = S / (8.0 * PI) * exp_sum;
 
-	for (int i = 0; i < dim(diffusionSigmas); ++i)
-	{
-		static const float rsqrtTwoPi = 0.39894228f;
-		float sigma = diffusionSigmas[i];
-		float gaussian = (rsqrtTwoPi / sigma) * expf(-0.5f * (x * x) / (sigma * sigma));
-
-		rgb[0] += diffusionWeightsR[i] * gaussian;
-		rgb[1] += diffusionWeightsG[i] * gaussian;
-		rgb[2] += diffusionWeightsB[i] * gaussian;
-	}
+	return R_N_mul_r;
 }
 
 GFSDK_FACEWORKS_API size_t GFSDK_FACEWORKS_CALLCONV GFSDK_FaceWorks_CalculateCurvatureLUTSizeBytes(
@@ -610,7 +592,17 @@ GFSDK_FACEWORKS_API GFSDK_FaceWorks_Result GFSDK_FACEWORKS_CALLCONV GFSDK_FaceWo
 	float NdotLScale = 2.0f / float(pConfig->m_texWidth);
 	float NdotLBias = -1.0f + 0.5f * NdotLScale;
 
-	unsigned char *pPx = static_cast<unsigned char *>(pCurvatureLUTOut);
+	uint8_t *pPx = static_cast<uint8_t *>(pCurvatureLUTOut);
+
+	// Config
+	double const lowerBound = -PI;
+	double const upperBound = PI;
+	int const sample_count = 512;
+
+	// https://github.com/Unity-Technologies/Graphics/blob/v10.8.0/com.unity.render-pipelines.high-definition/Runtime/RenderPipelineResources/Skin%20Diffusion%20Profile.asset#L17
+	double const scattering_distance[3] = {0.7568628, 0.32156864, 0.20000002};
+	double const S[3] = {1.0 / scattering_distance[0], 1.0 / scattering_distance[1], 1.0 / scattering_distance[2]};
+	// double const d = std::max(std::max(scattering_distance[0], scattering_distance[1]), scattering_distance[2]);
 
 	// !!!UNDONE: SIMD-ize or GPU-ize all this math
 
@@ -619,59 +611,69 @@ GFSDK_FACEWORKS_API GFSDK_FaceWorks_Result GFSDK_FACEWORKS_CALLCONV GFSDK_FaceWo
 		for (int iX = 0; iX < pConfig->m_texWidth; ++iX)
 		{
 			float NdotL = float(iX) * NdotLScale + NdotLBias;
-			float theta = acosf(NdotL);
+			double theta = acos(static_cast<double>(NdotL));
 
 			float curvature = float(iY) * curvatureScale + curvatureBias;
-			float radius = 1.0f / curvature;
+			double c = 1.0 / static_cast<double>(curvature);
 
-			// Sample points around a ring, and Monte-Carlo-integrate the
-			// scattered lighting using the diffusion profile
+			double sum_numerator[3] = {0.0, 0.0, 0.0};
+			double sum_denominator[3] = {0.0, 0.0, 0.0};
 
-			static const int cIter = 200;
-			float rgb[3] = {0.0f, 0.0f, 0.0f};
+			double const iterScale = (upperBound - lowerBound) * (1.0 / static_cast<double>(sample_count));
+			double const iterBias = lowerBound + 0.5 * iterScale;
 
-			// Set integration bounds in arc-length in mm on the sphere
-			float lowerBound = max(-pi * radius, -10.0f);
-			float upperBound = min(pi * radius, 10.0f);
-
-			float iterScale = (upperBound - lowerBound) / float(cIter);
-			float iterBias = lowerBound + 0.5f * iterScale;
-
-			for (int iIter = 0; iIter < cIter; ++iIter)
+			for (int sample_index = 0; sample_index < sample_count; ++sample_index)
 			{
-				float delta = float(iIter) * iterScale + iterBias;
-				float rgbDiffusion[3];
-				EvaluateDiffusionProfile(delta, rgbDiffusion);
+				// TODO: Do NOT use the uniform distribution!
+				double rcp_pdf = upperBound - lowerBound;
+				double sample_x = iterBias + iterScale * static_cast<double>(sample_index);
+				double r = 2.0 * c * abs(sin(0.5 * sample_x));
 
-				float NdotLDelta = max(0.0f, cosf(theta - delta * curvature));
-				rgb[0] += NdotLDelta * rgbDiffusion[0];
-				rgb[1] += NdotLDelta * rgbDiffusion[1];
-				rgb[2] += NdotLDelta * rgbDiffusion[2];
+				double R_N_mul_r[3];
+				R_N_mul_r[0] = diffusion_profile_evaluate_R_N_mul_r(S[0], r);
+				R_N_mul_r[1] = diffusion_profile_evaluate_R_N_mul_r(S[1], r);
+				R_N_mul_r[2] = diffusion_profile_evaluate_R_N_mul_r(S[2], r);
+
+				double cos_theta_add_x = std::max(0.0, cos(theta + sample_x));
+
+				double dr_per_dx = c * cos(0.5 * sample_x);
+
+				// 0.5 * (1 / N) * (2 * PI) * R_N(2c|sin(x/2)|) * (2c|sin(x/2)|) * max(cos(theta + x), 0.0) * (c(cos(x/2)))
+				// the common divisor '0.5 * (1 / N) * (2 * PI)' is reduced
+				sum_numerator[0] += (R_N_mul_r[0] * cos_theta_add_x * dr_per_dx * rcp_pdf);
+				sum_numerator[1] += (R_N_mul_r[1] * cos_theta_add_x * dr_per_dx * rcp_pdf);
+				sum_numerator[2] += (R_N_mul_r[2] * cos_theta_add_x * dr_per_dx * rcp_pdf);
+
+				// 0.5 * (1 / N) * (2 * PI) * R_N(2c|sin(x/2)|) * (2c|sin(x/2)|) * (c(cos(x/2)))
+				// the common divisor '0.5 * (1 / N) * (2 * PI)' is reduced
+				sum_denominator[0] += (R_N_mul_r[0] * dr_per_dx * rcp_pdf);
+				sum_denominator[1] += (R_N_mul_r[1] * dr_per_dx * rcp_pdf);
+				sum_denominator[2] += (R_N_mul_r[2] * dr_per_dx * rcp_pdf);
 			}
 
-			// Scale sum of samples to get value of integral
-			float scale = (upperBound - lowerBound) / float(cIter);
-			rgb[0] *= scale;
-			rgb[1] *= scale;
-			rgb[2] *= scale;
+			double d_theta_c[3] = {sum_numerator[0] / sum_denominator[0], sum_numerator[1] / sum_denominator[1], sum_numerator[2] / sum_denominator[2]};
 
-			// Calculate delta from standard diffuse lighting (saturate(N.L)) to
-			// scattered result, remapped from [-.25, .25] to [0, 1].
-			float rgbAdjust = -max(0.0f, NdotL) * 2.0f + 0.5f;
-			rgb[0] = rgb[0] * 2.0f + rgbAdjust;
-			rgb[1] = rgb[1] * 2.0f + rgbAdjust;
-			rgb[2] = rgb[2] * 2.0f + rgbAdjust;
+			// detach the NoL from the total integral
+			double NoL = std::min(1.0, std::max(0.0, static_cast<double>(NdotL)));
+			d_theta_c[0] -= NoL;
+			d_theta_c[1] -= NoL;
+			d_theta_c[2] -= NoL;
 
-			// Clamp to [0, 1]
-			rgb[0] = min(max(rgb[0], 0.0f), 1.0f);
-			rgb[1] = min(max(rgb[1], 0.0f), 1.0f);
-			rgb[2] = min(max(rgb[2], 0.0f), 1.0f);
+			// the remaining part of the integral is relatively small
+			// map the remaining part of the integral from [-0.25, 0.25] to [0, 1] to fully use the precision of the texture
+			d_theta_c[0] = d_theta_c[0] * 2.0 + 0.5;
+			d_theta_c[1] = d_theta_c[1] * 2.0 + 0.5;
+			d_theta_c[2] = d_theta_c[2] * 2.0 + 0.5;
 
-			// Convert to integer format (linear RGB space)
-			*(pPx++) = static_cast<unsigned char>(255.0f * rgb[0] + 0.5f);
-			*(pPx++) = static_cast<unsigned char>(255.0f * rgb[1] + 0.5f);
-			*(pPx++) = static_cast<unsigned char>(255.0f * rgb[2] + 0.5f);
-			*(pPx++) = 255;
+			double uint8_d_theta_c[3];
+			uint8_d_theta_c[0] = std::min(static_cast<double>(UINT8_MAX), std::max(0.0, static_cast<double>(UINT8_MAX) * d_theta_c[0]));
+			uint8_d_theta_c[1] = std::min(static_cast<double>(UINT8_MAX), std::max(0.0, static_cast<double>(UINT8_MAX) * d_theta_c[1]));
+			uint8_d_theta_c[2] = std::min(static_cast<double>(UINT8_MAX), std::max(0.0, static_cast<double>(UINT8_MAX) * d_theta_c[2]));
+
+			*(pPx++) = static_cast<uint8_t>(uint8_d_theta_c[0]);
+			*(pPx++) = static_cast<uint8_t>(uint8_d_theta_c[1]);
+			*(pPx++) = static_cast<uint8_t>(uint8_d_theta_c[2]);
+			*(pPx++) = static_cast<uint8_t>(UINT8_MAX);
 		}
 	}
 
@@ -782,13 +784,13 @@ GFSDK_FACEWORKS_API GFSDK_FaceWorks_Result GFSDK_FACEWORKS_CALLCONV GFSDK_FaceWo
 			for (int iIter = 0; iIter < cIter; ++iIter)
 			{
 				float delta = float(iIter) * iterScale + iterBias;
-				float rgbDiffusion[3];
-				EvaluateDiffusionProfile(delta, rgbDiffusion);
+				// TODO: FixMe!
+				float rgbDiffusion[3] = {1.0, 1.0, 1.0};
+				// EvaluateDiffusionProfile(delta, rgbDiffusion);
 
 				// Use smoothstep as an approximation of the transfer function of a
 				// disc or Gaussian filter.
-				float newPos = (inputPos + delta * rcpWidth) * pConfig->m_shadowSharpening +
-							   (-0.5f * pConfig->m_shadowSharpening + 0.5f);
+				float newPos = (inputPos + delta * rcpWidth) * pConfig->m_shadowSharpening + (-0.5f * pConfig->m_shadowSharpening + 0.5f);
 				float newPosClamped = min(max(newPos, 0.0f), 1.0f);
 				float newShadow = (3.0f - 2.0f * newPosClamped) * newPosClamped * newPosClamped;
 

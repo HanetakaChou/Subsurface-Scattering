@@ -118,6 +118,102 @@ float3 EvaluateSSSDiffuseLight(
 
 // Specular lighting
 
+// https://oeis.org/A000796
+#define PI 3.14159265358979323846264338327950288419716939937510582097494459230781640628620899862803482534211706798214
+
+float3 F_Schlick(float3 f0, float f90, float LdotH)
+{
+	// Equation 9.18 of Real-Time Rendering Fourth Edition
+	// U3D: [F_Schlick](https://github.com/Unity-Technologies/Graphics/blob/v10.8.0/com.unity.render-pipelines.core/ShaderLibrary/BSDF.hlsl#L45)
+	float x = 1.0 - LdotH;
+	float x2 = x * x;
+	float x5 = x2 * x2 * x;
+	return (f0 * (1.0 - x5) + float3(f90, f90, f90) * x5);
+}
+
+float3 F_Schlick(float3 f0, float LdotH)
+{
+	// UE: [F_Schlick](https://github.com/EpicGames/UnrealEngine/blob/4.27/Engine/Shaders/Private/BRDF.ush#L415)
+	// Anything less than 2% is physically impossible and is instead considered to be shadowing
+	float f90 = clamp(50.0 * f0.g, 0.0, 1.0);
+
+	return F_Schlick(f0, f90, LdotH);
+}
+
+float D_Blinn(float n, float NdotH)
+{
+	// UE: [D_Blinn](https://github.com/EpicGames/UnrealEngine/blob/4.27/Engine/Shaders/Private/BRDF.ush#L303)
+	return ((n + 2.0) / (2.0 * PI) * pow(NdotH, n));
+}
+
+float Vis_Schlick(float n, float NdotV, float NdotL)
+{
+	// UE: [Vis_Schlick](https://github.com/EpicGames/UnrealEngine/blob/4.27/Engine/Shaders/Private/BRDF.ush#L361)
+	float k = rsqrt(n * (PI * 0.25) + (PI * 0.5));
+	float Vis_SchlickV = k + NdotV * (1.0 - k); // lerp(k, 1.0, NdotV)
+	float Vis_SchlickL = k + NdotL * (1.0 - k); // lerp(k, 1.0, NdotL)
+	return (0.25 / (Vis_SchlickV * Vis_SchlickL));
+}
+
+float3 Specular_Blinn(float3 specular_color, float n, float NdotV, float NdotL, float NdotH, float LdotH)
+{
+	float D = D_Blinn(n, NdotH);
+	float BRDF_V = Vis_Schlick(n, NdotV, NdotL);
+	float3 F = F_Schlick(specular_color, LdotH);
+	return (D * BRDF_V) * F;
+}
+
+float D_TR(float alpha, float NdotH)
+{
+	// Trowbridge-Reitz
+
+	// Equation 9.41 of Real-Time Rendering Fourth Edition: "Although ¡°Trowbridge-Reitz distribution¡± is technically the correct name"
+	// Equation 8.11 of PBR Book: https://pbr-book.org/3ed-2018/Reflection_Models/Microfacet_Models#MicrofacetDistributionFunctions
+	float alpha2 = alpha * alpha;
+	float denominator = 1.0 + NdotH * (NdotH * alpha2 - NdotH);
+	return (1.0 / PI) * (alpha2 / (denominator * denominator));
+}
+
+float V_HC_TR(float alpha, float NdotV, float NdotL)
+{
+	// Height-Correlated Trowbridge-Reitz
+
+	// Lambda:
+	// Equation 8.13 of PBR Book: https://pbr-book.org/3ed-2018/Reflection_Models/Microfacet_Models#MaskingandShadowing
+
+	// Lambda for Trowbridge-Reitz:
+	// Equation 9.42 of Real-Time Rendering Fourth Edition
+	// Figure 8.18 of PBR Book: https://pbr-book.org/3ed-2018/Reflection_Models/Microfacet_Models#MaskingandShadowing
+	// ¦«(V) = 0.5*(-1.0 + (1.0/NoV)*sqrt(alpha^2 + (1.0 - alpha^2)*NoV^2))
+	// ¦«(L) = 0.5*(-1.0 + (1.0/NoL)*sqrt(alpha^2 + (1.0 - alpha^2)*NoL^2))
+
+	// G2
+	// Equation 9.31 of Real-Time Rendering Fourth Edition
+	// PBR Book / 8.4.3 Masking and Shadowing: "A more accurate model can be derived assuming that microfacet visibility is more likely the higher up a given point on a microface"
+	// G2 = 1.0/(1.0 + ¦«(V) + ¦«(L)) = (2.0*NoV*NoL)/(NoL*sqrt(alpha^2 + (1.0 - alpha^2)*NoV^2) + NoV*sqrt(alpha^2 + (1.0 - alpha^2)*NoL^2))
+
+	// V = G2/(4.0*NoV*NoL) = 0.5/(NoL*sqrt(alpha^2 + (1.0 - alpha^2)*NoV^2) + NoV*sqrt(alpha^2 + (1.0 - alpha^2)*NoL^2))
+
+	float alpha2 = alpha * alpha;
+	float term_v = NdotL * sqrt(alpha2 + (1.0 - alpha2) * NdotV * NdotV);
+	float term_L = NdotV * sqrt(alpha2 + (1.0 - alpha2) * NdotL * NdotL);
+	// UE: [Vis_SmithJointApprox](https://github.com/EpicGames/UnrealEngine/blob/4.27/Engine/Shaders/Private/BRDF.ush#L380)
+	// highp float term_v = NdotL * (alpha + (1.0 - alpha) * NdotV);
+	// highp float term_L = NdotV * (alpha + (1.0 - alpha) * NdotL);
+	return (0.5 / (term_v + term_L));
+}
+
+float3 Specular_TR(float3 specular_color, float roughness, float NdotV, float NdotL, float NdotH, float LdotH)
+{
+	// Real-Time Rendering Fourth Edition / 9.8.1 Normal Distribution Functions: "In the Disney principled shading model, Burley[214] exposes the roughness control to users as ¦Ág = r2, where r is the user-interface roughness parameter value between 0 and 1."
+	float alpha = roughness * roughness;
+
+	float D = D_TR(alpha, NdotH);
+	float BRDF_V = V_HC_TR(alpha, NdotV, NdotL);
+	float3 F = F_Schlick(specular_color, LdotH);
+	return (D * BRDF_V) * F;
+}
+
 float3 EvaluateSpecularLight(
 	float3 normalGeom,
 	float3 normalShade,
@@ -126,53 +222,74 @@ float3 EvaluateSpecularLight(
 	float gloss,
 	float shadow)
 {
-	// Directional light spec
-
-	float3 vecHalf = normalize(g_vecDirectionalLight + vecCamera);
-	float NdotL = saturate(dot(normalShade, g_vecDirectionalLight));
-	float NdotH = saturate(dot(normalShade, vecHalf));
-	float LdotH = dot(g_vecDirectionalLight, vecHalf);
-	float NdotV = saturate(dot(normalShade, vecCamera));
-	float specPower = exp2(gloss * 13.0);
-
-	// Evaluate NDF and visibility function:
-	// Two-lobe Blinn-Phong, with double gloss on second lobe
 	float specLobeBlend = 0.05;
-	float specPower0 = specPower;
-	float specPower1 = square(specPower);
-	float ndf0 = pow(NdotH, specPower0) * (specPower0 + 2.0) * 0.5;
-	float schlickSmithFactor0 = rsqrt(specPower0 * (3.14159 * 0.25) + (3.14159 * 0.5));
-	float visibilityFn0 = 0.25 / (lerp(schlickSmithFactor0, 1, NdotL) *
-								  lerp(schlickSmithFactor0, 1, NdotV));
-	float ndf1 = pow(NdotH, specPower1) * (specPower1 + 2.0) * 0.5;
-	float schlickSmithFactor1 = rsqrt(specPower1 * (3.14159 * 0.25) + (3.14159 * 0.5));
-	float visibilityFn1 = 0.25 / (lerp(schlickSmithFactor1, 1, NdotL) *
-								  lerp(schlickSmithFactor1, 1, NdotV));
-	float ndfResult = lerp(ndf0 * visibilityFn0, ndf1 * visibilityFn1, specLobeBlend);
+	float3 specular_color = float3(specReflectance, specReflectance, specReflectance);
+	float NdotV = saturate(dot(normalShade, vecCamera));
 
-	float fresnel = lerp(specReflectance, 1.0, pow(1.0 - LdotH, 5.0));
-	float specResult = ndfResult * fresnel;
-	// Darken spec where the *geometric* NdotL gets too low -
-	// avoids it showing up on bumps in shadowed areas
-	float edgeDarken = saturate(5.0 * dot(normalGeom, g_vecDirectionalLight));
-	float3 rgbLitSpecular = g_rgbDirectionalLight * (NdotL * edgeDarken * specResult * shadow);
+	// Directional light spec
+	float3 rgbDirectionalLightSpecular;
+	{
+		float3 vecHalf = normalize(g_vecDirectionalLight + vecCamera);
+		float NdotL = saturate(dot(normalShade, g_vecDirectionalLight));
+		float NdotH = saturate(dot(normalShade, vecHalf));
+		float LdotH = dot(g_vecDirectionalLight, vecHalf);
+
+		// Evaluate NDF and visibility function:
+
+		// Double gloss on second lobe
+		float specPower = exp2(gloss * 13.0);
+		float specPower0 = specPower;
+		float specPower1 = square(specPower);
+#if 0
+		// Two-lobe Blinn-Phong 
+		float3 specResult0 = Specular_Blinn(specular_color, specPower0, NdotV, NdotL, NdotH, LdotH);
+		float3 specResult1 = Specular_Blinn(specular_color, specPower1, NdotV, NdotL, NdotH, LdotH);
+		float3 specResult = lerp(specResult0, specResult1, specLobeBlend);
+#else
+		// Dual Specular TR
+				
+		// D_Blinn: alpha = sqrt(2.0 / (n + 2.0));
+		// Vis_Schlick: alpha = sqrt(4.0 / (n * (PI * 0.25) + (PI * 0.5)));
+		float alpha0_D_Blinn = sqrt(2.0 / (specPower0 + 2.0));
+		float alpha0_Vis_Schlick = sqrt(4.0 / (specPower0 * (PI * 0.25) + (PI * 0.5)));
+		float roughtness0 = sqrt(0.5 * (alpha0_D_Blinn + alpha0_Vis_Schlick));
+		float alpha1_D_Blinn = sqrt(2.0 / (specPower1 + 2.0));
+		float alpha1_Vis_Schlick = sqrt(4.0 / (specPower1 * (PI * 0.25) + (PI * 0.5)));
+		float roughtness1 = sqrt(0.5 * (alpha1_D_Blinn + alpha1_Vis_Schlick));
+
+		// UE: [DualSpecularGGX](https://github.com/EpicGames/UnrealEngine/blob/4.27/Engine/Shaders/Private/ShadingModels.ush#L178)
+		float3 specResult0 = Specular_TR(specular_color, roughtness0, NdotV, NdotL, NdotH, LdotH);
+		float3 specResult1 = Specular_TR(specular_color, roughtness1, NdotV, NdotL, NdotH, LdotH);
+		float3 specResult = lerp(specResult0, specResult1, specLobeBlend);
+#endif
+
+		// Darken spec where the *geometric* NdotL gets too low -
+		// avoids it showing up on bumps in shadowed areas
+		float edgeDarken = saturate(5.0 * dot(normalGeom, g_vecDirectionalLight));
+		
+		rgbDirectionalLightSpecular = (PI * g_rgbDirectionalLight) * (NdotL * edgeDarken * specResult * shadow);
+	}
 
 	// IBL spec - again two-lobe
-	float3 vecReflect = reflect(-vecCamera, normalShade);
-	float gloss0 = gloss;
-	float gloss1 = saturate(2.0 * gloss);
-	float fresnelIBL0 = lerp(specReflectance, 1.0,
-							 pow(1.0 - NdotV, 5.0) / (-3.0 * gloss0 + 4.0));
-	float mipLevel0 = -9.0 * gloss0 + 9.0;
-	float3 iblSpec0 = fresnelIBL0 * g_texCubeSpec.SampleLevel(
-										g_ssTrilinearRepeat, vecReflect, mipLevel0);
-	float fresnelIBL1 = lerp(specReflectance, 1.0,
-							 pow(1.0 - NdotV, 5.0) / (-3.0 * gloss1 + 4.0));
-	float mipLevel1 = -9.0 * gloss1 + 9.0;
-	float3 iblSpec1 = fresnelIBL1 * g_texCubeSpec.SampleLevel(
-										g_ssTrilinearRepeat, vecReflect, mipLevel1);
-	rgbLitSpecular += lerp(iblSpec0, iblSpec1, specLobeBlend);
+	float3 rgbIBLSpecular;
+	{
+		float3 vecReflect = reflect(-vecCamera, normalShade);
 
+		float gloss0 = gloss;
+		float gloss1 = saturate(2.0 * gloss);
+
+		float3 fresnelIBL0 = F_Schlick(specular_color, NdotV / (-3.0 * gloss0 + 4.0));
+		float mipLevel0 = -9.0 * gloss0 + 9.0;
+		float3 iblSpec0 = fresnelIBL0 * g_texCubeSpec.SampleLevel(g_ssTrilinearRepeat, vecReflect, mipLevel0);
+
+		float3 fresnelIBL1 = F_Schlick(specular_color, NdotV / (-3.0 * gloss1 + 4.0));
+		float mipLevel1 = -9.0 * gloss1 + 9.0;
+		float3 iblSpec1 = fresnelIBL1 * g_texCubeSpec.SampleLevel(g_ssTrilinearRepeat, vecReflect, mipLevel1);
+
+		rgbIBLSpecular = lerp(iblSpec0, iblSpec1, specLobeBlend);
+	}
+
+	float3 rgbLitSpecular = rgbDirectionalLightSpecular + rgbIBLSpecular;
 	return rgbLitSpecular;
 }
 
